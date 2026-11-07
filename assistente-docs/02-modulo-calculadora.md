@@ -182,6 +182,12 @@ public static List<PontoSensibilidade> curvaPorEntrada(
 
 Roda inteiramente no cliente. Não há endpoint.
 
+**Como a curva é gerada** (decisão T7 do SPEC, novembro de 2026):
+
+- `passos` pontos igualmente espaçados, com entrada de R$ 0 até o **valor do bem inteiro**. O último ponto é o cenário à vista — parcela e juros zero — e não é erro: é o alvo.
+- O ponto exato da âncora (a entrada da proposta real) sempre entra na curva, uma vez só.
+- `distanciaDaAncora = |entrada − entradaAncora| ÷ valorBem`, com 4 casas. Vale 0 na âncora e cresce com a extrapolação, sempre entre 0 e 1. Dividir pelo valor do bem deixa a medida na mesma escala para uma moto de R$ 20 mil e um carro de R$ 200 mil; a interface decide a partir de que distância esmaecer o número.
+
 ### A premissa que precisa estar visível
 
 Segurar a taxa constante enquanto a entrada varia é **aproximação local**, e ela erra nos dois sentidos:
