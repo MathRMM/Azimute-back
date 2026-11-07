@@ -1,0 +1,20 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Gradle / build
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# SO
+.DS_Store
+Thumbs.db
+*.log
