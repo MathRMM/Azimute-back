@@ -1,8 +1,11 @@
 package br.dev.azimute;
 
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -15,6 +18,20 @@ class ModularidadeTest {
     @Test
     void fronteiras_entre_modulos_sao_respeitadas() {
         modulos.verify();
+    }
+
+    @Test
+    void comum_nao_depende_de_spring_nem_de_jackson() {
+        var classes = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("br.dev.azimute.comum");
+
+        // package-info só carrega a anotação de metadado do Modulith
+        noClasses().that().doNotHaveSimpleName("package-info")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("org.springframework..", "tools.jackson..", "com.fasterxml.jackson..")
+                .because("comum é só tipo de valor, sem Spring e sem I/O (regra 1 da doc 00)")
+                .check(classes);
     }
 
     @Test

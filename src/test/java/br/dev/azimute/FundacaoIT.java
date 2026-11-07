@@ -1,6 +1,8 @@
 package br.dev.azimute;
 
+import br.dev.azimute.comum.Dinheiro;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -40,6 +42,7 @@ class FundacaoIT {
     @Autowired MockMvc mvc;
     @Autowired ApplicationEventPublisher eventos;
     @Autowired TransactionTemplate transacao;
+    @Autowired JsonMapper jsonMapper;
 
     @Test
     void flyway_aplica_a_migration_inicial() {
@@ -93,6 +96,19 @@ class FundacaoIT {
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.components").doesNotExist())
                 .andExpect(jsonPath("$.details").doesNotExist());
+    }
+
+    @Test
+    void jackson_da_aplicacao_usa_o_modulo_do_kernel() {
+        assertThat(jsonMapper.writeValueAsString(Dinheiro.de("17430"))).isEqualTo("\"17430.00\"");
+    }
+
+    @Test
+    void rota_inexistente_responde_no_formato_de_erro_da_api() throws Exception {
+        mvc.perform(get("/api/nao-existe"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erro").value("ROTA_NAO_ENCONTRADA"))
+                .andExpect(jsonPath("$.mensagem").exists());
     }
 
     @Test

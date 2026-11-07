@@ -196,21 +196,21 @@ backend-azimute-core/
 - Jackson: `Dinheiro` e `Competencia` como string (Decisão T2).
 
 **Testes (TDD):**
-- [ ] `Dinheiro` → dado `"0.125"`, então vale `0.12`; dado `"0.135"`, então `0.14` (HALF_EVEN)
-- [ ] `Dinheiro` → `0.10 + 0.20 == 0.30` exatamente; `menos` produz negativo e `negativo()` é verdadeiro
-- [ ] `Dinheiro` → valor nulo é rejeitado
-- [ ] Propriedade (jqwik) → para quaisquer `a`, `b`: `a.mais(b).menos(b) == a`
-- [ ] `Competencia` → `2026-12` `proxima()` = `2027-01`; `mais(14)` cruza o ano; `ate` inclui as duas pontas
-- [ ] `Competencia` → `"2026-09"` ida e volta; `"2026-9"`, `"09/2026"` e `"2026-09-01"` são rejeitados
-- [ ] `Percentual` → `-1` e `101` rejeitados; `45` → fração `0.45`
-- [ ] `TradutorDeErros` → `ErroDeNegocio` do tipo CONFLITO → 409 com `erro`, `mensagem` e `detalhes`
-- [ ] `TradutorDeErros` → exceção inesperada no perfil `prod` → 500 sem stack trace nem nome de classe no corpo
-- [ ] Jackson → `Dinheiro("17430.00")` serializa como `"17430.00"`; `Competencia` como `"2026-09"`
+- [x] `Dinheiro` → dado `"0.125"`, então vale `0.12`; dado `"0.135"`, então `0.14` (HALF_EVEN)
+- [x] `Dinheiro` → `0.10 + 0.20 == 0.30` exatamente; `menos` produz negativo e `negativo()` é verdadeiro
+- [x] `Dinheiro` → valor nulo é rejeitado
+- [x] Propriedade (jqwik) → para quaisquer `a`, `b`: `a.mais(b).menos(b) == a`
+- [x] `Competencia` → `2026-12` `proxima()` = `2027-01`; `mais(14)` cruza o ano; `ate` inclui as duas pontas
+- [x] `Competencia` → `"2026-09"` ida e volta; `"2026-9"`, `"09/2026"` e `"2026-09-01"` são rejeitados
+- [x] `Percentual` → `-1` e `101` rejeitados; `45` → fração `0.45`
+- [x] `TradutorDeErros` → `ErroDeNegocio` do tipo CONFLITO → 409 com `erro`, `mensagem` e `detalhes`
+- [x] `TradutorDeErros` → exceção inesperada no perfil `prod` → 500 sem stack trace nem nome de classe no corpo
+- [x] Jackson → `Dinheiro("17430.00")` serializa como `"17430.00"`; `Competencia` como `"2026-09"`
 
 **Checklist de validação:**
-- [ ] `comum` sem nenhum import de Spring ou Jackson (regra 1 da doc 00)
-- [ ] RF01–RF03, RF06, RN01–RN03, SEC06 atendidos
-- [ ] Testes das fases 1 e 2 passando
+- [x] `comum` sem nenhum import de Spring ou Jackson (regra 1 da doc 00)
+- [x] RF01–RF03, RF06, RN01–RN03, SEC06 atendidos
+- [x] Testes das fases 1 e 2 passando
 
 **Critério de avanço:** checklist completo → Fase 3.
 
@@ -670,3 +670,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 |---|---|---|
 | 1.0 | 2026-11-07 | Criação inicial: 8 fases |
 | 1.1 | 2026-11-07 | Fase 1 concluída: Boot 4.1.2, Modulith 2.1.1 (schema de eventos v2), Gradle 9.8.2; segurança provisória `permitAll` em `auth` até a Fase 7 |
+| 1.2 | 2026-11-07 | Fase 2 concluída: Jackson 3 (`tools.jackson`) do Boot 4; erros do próprio Spring MVC (404, 405, 415, parâmetro ausente) mantêm o status no formato `ErroApi`; regra ArchUnit garante `comum` sem Spring/Jackson |
