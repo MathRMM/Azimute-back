@@ -43,6 +43,7 @@ class FundacaoIT {
     @Autowired ApplicationEventPublisher eventos;
     @Autowired TransactionTemplate transacao;
     @Autowired JsonMapper jsonMapper;
+    @Autowired org.springframework.web.context.WebApplicationContext contexto;
 
     @Test
     void flyway_aplica_a_migration_inicial() {
@@ -105,7 +106,7 @@ class FundacaoIT {
 
     @Test
     void rota_inexistente_responde_no_formato_de_erro_da_api() throws Exception {
-        mvc.perform(get("/api/nao-existe"))
+        ClienteDeTeste.autenticado(contexto, jdbc).perform(get("/api/nao-existe"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.erro").value("ROTA_NAO_ENCONTRADA"))
                 .andExpect(jsonPath("$.mensagem").exists());
@@ -113,7 +114,7 @@ class FundacaoIT {
 
     @Test
     void outros_endpoints_do_actuator_nao_sao_expostos() throws Exception {
-        mvc.perform(get("/actuator/env")).andExpect(status().isNotFound());
+        ClienteDeTeste.autenticado(contexto, jdbc).perform(get("/actuator/env")).andExpect(status().isNotFound());
     }
 
     @Test

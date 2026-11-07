@@ -373,23 +373,23 @@ backend-azimute-core/
 - `HttpsObrigatorioFilter` (Decisão T4): fora do perfil `dev`, requisição não segura → 403 `HTTPS_OBRIGATORIO`. Rejeitar em vez de redirecionar, porque redirecionar uma API que recebeu senha em HTTP já vazou a senha. `server.forward-headers-strategy=framework` no `prod` (SEC12, D1).
 
 **Testes (TDD):**
-- [ ] Sem token → `GET /api/calculadora/historico` → 401 `NAO_AUTENTICADO` no formato `ErroApi`
-- [ ] Token inválido → 401; token revogado → 401; token válido → 200
-- [ ] Cadastro → credenciais corretas → 200 com token; o banco contém só o hash (64 caracteres hex), e o token não aparece em nenhuma coluna
-- [ ] Cadastro → senha errada e login inexistente → mesmo status e mesmo corpo (a igualdade de tempo é testada na Fase 8)
-- [ ] Revogação → `DELETE` do próprio ou de outro dispositivo → requisições seguintes com aquele token → 401
-- [ ] Listagem → retorna nome, `criadoEm` e `ultimoUso`, nunca o hash
-- [ ] `ultimo_uso` → duas requisições no mesmo minuto → uma escrita só
-- [ ] Seed → contexto sem usuário e sem a variável → a aplicação não sobe; com senha de 11 caracteres → não sobe; com usuário existente e sem a variável → sobe
-- [ ] HTTPS (perfil `prod`) → HTTP puro → 403 `HTTPS_OBRIGATORIO`; com `X-Forwarded-Proto: https` → aceito
-- [ ] HTTPS (perfil `dev`) → HTTP puro aceito
-- [ ] Sessão → nenhuma resposta traz `Set-Cookie: JSESSIONID`
-- [ ] Actuator → `/actuator/health` público; `/actuator/info` (ou outro exposto) sem token → 401
+- [x] Sem token → `GET /api/calculadora/historico` → 401 `NAO_AUTENTICADO` no formato `ErroApi`
+- [x] Token inválido → 401; token revogado → 401; token válido → 200
+- [x] Cadastro → credenciais corretas → 200 com token; o banco contém só o hash (64 caracteres hex), e o token não aparece em nenhuma coluna
+- [x] Cadastro → senha errada e login inexistente → mesmo status e mesmo corpo (a igualdade de tempo é testada na Fase 8)
+- [x] Revogação → `DELETE` do próprio ou de outro dispositivo → requisições seguintes com aquele token → 401
+- [x] Listagem → retorna nome, `criadoEm` e `ultimoUso`, nunca o hash
+- [x] `ultimo_uso` → duas requisições no mesmo minuto → uma escrita só
+- [x] Seed → contexto sem usuário e sem a variável → a aplicação não sobe; com senha de 11 caracteres → não sobe; com usuário existente e sem a variável → sobe
+- [x] HTTPS (perfil `prod`) → HTTP puro → 403 `HTTPS_OBRIGATORIO`; com `X-Forwarded-Proto: https` → aceito
+- [x] HTTPS (perfil `dev`) → HTTP puro aceito
+- [x] Sessão → nenhuma resposta traz `Set-Cookie: JSESSIONID`
+- [x] Actuator → `/actuator/health` público; `/actuator/info` (ou outro exposto) sem token → 401
 
 **Checklist de validação:**
-- [ ] RF30–RF34, RF36, RN19, SEC01–SEC05, SEC07, SEC09–SEC12 atendidos
-- [ ] Os ITs da calculadora foram atualizados para autenticar e continuam verdes
-- [ ] Testes das fases 1–7 passando
+- [x] RF30–RF34, RF36, RN19, SEC01–SEC05, SEC07, SEC09–SEC12 atendidos
+- [x] Os ITs da calculadora foram atualizados para autenticar e continuam verdes
+- [x] Testes das fases 1–7 passando
 
 **Critério de avanço:** checklist completo → Fase 8.
 
@@ -678,3 +678,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | 1.4 | 2026-11-07 | Decisão T7 (semântica da curva) aprovada; Fase 4 concluída. Acréscimos: no `Comparador`, taxa abaixo de 0,0001% a.m. vira `ZERO` (acima de 30% o erro se propaga); conveniências `Veredito.aVistaVence()` e `PontoSensibilidade.ancora()`; 4 vetores de comparação calculados de forma independente |
 | 1.5 | 2026-11-07 | Fase 5 concluída. Desvios: (a) **tolerância de R$ 0,01 na parcela da estimativa** em vez de exata (D6): o app calcula com a taxa da âncora em precisão total e o servidor só tem 8 casas, e uma rejeição indevida travaria a fila offline, que não descarta itens; (b) inserção com `INSERT … ON CONFLICT (id) DO NOTHING` via `JdbcClient` em vez de `JdbcAggregateTemplate.insert` + captura de PK (sem transação abortada na corrida); (c) o trigger também protege `valor_financiado` e `taxa_anual`, que são snapshot; (d) proposta com `ancoraId` → `ANCORA_INVALIDA`; âncora de estimativa precisa ser `PROPOSTA`; (e) DTOs e erros no pacote `historico`, sem subpacotes `dto/` e `erros/` (tudo package-private) |
 | 1.6 | 2026-11-07 | Fase 6 concluída. Detalhes: `PATCH` lê o corpo como mapa (campo ausente não muda; `observacao: null` ou em branco apaga); `status: null` → 422; a resposta da comparação também traz `local`, `origem`, `status` e `parcela` de cada item; `DELETE` captura a violação de FK de uma estimativa gravada no meio da exclusão e responde 409; `economiaEntreMelhorEPior` pode ser **negativa** quando a proposta de menor taxa tem prazo maior (juros totais maiores), o que é coerente com a D4 |
+| 1.7 | 2026-11-07 | Fase 7 concluída. Desvios: (a) o seed lê a propriedade `app.senha-inicial`, preenchida por `APP_SENHA_INICIAL` (variável de ambiente não é configurável em teste; para o usuário, nada muda); (b) **`/actuator/health` fica fora da exigência de HTTPS**, porque o healthcheck interno chama por HTTP e a rota só responde "UP"; (c) `HttpsObrigatorioFilter` e `TokenFilter` não são beans (só existem dentro da cadeia de segurança, sem registro duplicado como filtro de servlet); (d) 401 traz `WWW-Authenticate: Bearer`; 403 de autorização sai como `ACESSO_NEGADO`; (e) datas da listagem de dispositivos no fuso de São Paulo, como no histórico; (f) alvo `make dispositivo`; (g) nos testes, `ClienteDeTeste` grava um dispositivo direto no banco e usa HTTPS, e `src/test/resources/config/application.yml` define a senha inicial dos testes. Validado de ponta a ponta com Docker Compose |

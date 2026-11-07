@@ -1,0 +1,3 @@
+# Carregado além do application.yml principal, só nos testes (classpath:/config/ tem precedência).
+app:
+  senha-inicial: senha-de-teste-bem-comprida
