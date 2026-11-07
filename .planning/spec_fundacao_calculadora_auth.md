@@ -234,22 +234,22 @@ backend-azimute-core/
 - `vetores-juros.json` com os seis casos da RN07 (RF17). O `core` não importa nada fora de `comum` e do JDK.
 
 **Testes (TDD):**
-- [ ] Vetores → para cada caso do JSON, `taxaImplicita(pv, pmt, n)` está dentro de 1e-7 do esperado; anualizada arredondada a 1 casa percentual bate (51,3%; 62,6%; …)
-- [ ] Vetores → `parcela(pv, taxaEsperada, n)` reproduz o PMT do vetor com diferença ≤ R$ 0,01
-- [ ] Propriedade (jqwik, ≥ 1000 casos) → `pv` ∈ [100; 1.000.000], `i` ∈ [0,0001; 0,25], `n` ∈ [1; 120]: `taxaImplicita(pv, parcela(pv, i, n), n) ≈ i` (1e-8) (RN05) [observação: a parcela é arredondada a centavos, e para `pv` pequeno com `n` grande isso pode exceder 1e-8; se ocorrer, a propriedade usa a parcela sem arredondar, via um método interno de precisão total]
-- [ ] Propriedade → `valorPresente(parcela(pv, i, n), i, n) ≈ pv` (≤ R$ 0,01 × n)
-- [ ] Borda → `n = 1`: taxa = PMT/PV − 1 exatamente
-- [ ] Borda → `PMT × n == PV` → `SemJurosException`
-- [ ] Borda → `PV = 0`, `PMT = 0`, `n = 0`, `n = −1` → rejeitados
-- [ ] Borda → PV 1.000, PMT 400, n 3 (≈ 9,7% a.m.) converge; PV 1.000, PMT 600, n 3 (> 30% a.m.) → `TaxaForaDaFaixaException`
-- [ ] Borda → `taxa_muito_baixa` converge (sem divergir perto de 1e-6)
-- [ ] `TaxaMensal` → `dePercentual("3.51")` = 0,0351; taxa negativa rejeitada
-- [ ] Desempenho → `taxaImplicita` no vetor moto 36x < 10 ms após aquecimento (RNF07)
+- [x] Vetores → para cada caso do JSON, `taxaImplicita(pv, pmt, n)` está dentro de 1e-7 do esperado; anualizada arredondada a 1 casa percentual bate (51,3%; 62,6%; …)
+- [x] Vetores → `parcela(pv, taxaEsperada, n)` reproduz o PMT do vetor com diferença ≤ R$ 0,01
+- [x] Propriedade (jqwik, ≥ 1000 casos) → `pv` ∈ [100; 1.000.000], `i` ∈ [0,0001; 0,25], `n` ∈ [1; 120]: `taxaImplicita(pv, parcela(pv, i, n), n) ≈ i` (1e-8) (RN05) [observação: a parcela é arredondada a centavos, e para `pv` pequeno com `n` grande isso pode exceder 1e-8; se ocorrer, a propriedade usa a parcela sem arredondar, via um método interno de precisão total]
+- [x] Propriedade → `valorPresente(parcela(pv, i, n), i, n) ≈ pv` (≤ R$ 0,01 × n)
+- [x] Borda → `n = 1`: taxa = PMT/PV − 1 exatamente
+- [x] Borda → `PMT × n == PV` → `SemJurosException`
+- [x] Borda → `PV = 0`, `PMT = 0`, `n = 0`, `n = −1` → rejeitados
+- [x] Borda → PV 1.000, PMT 400, n 3 (≈ 9,7% a.m.) converge; PV 1.000, PMT 600, n 3 (> 30% a.m.) → `TaxaForaDaFaixaException`
+- [x] Borda → `taxa_muito_baixa` converge (sem divergir perto de 1e-6)
+- [x] `TaxaMensal` → `dePercentual("3.51")` = 0,0351; taxa negativa rejeitada
+- [x] Desempenho → `taxaImplicita` no vetor moto 36x < 10 ms após aquecimento (RNF07)
 
 **Checklist de validação:**
-- [ ] RF10–RF14, RF17, RN04–RN07 atendidos
-- [ ] `ModularidadeTest` continua verde (o `core` só depende de `comum`)
-- [ ] Testes das fases 1–3 passando
+- [x] RF10–RF14, RF17, RN04–RN07 atendidos
+- [x] `ModularidadeTest` continua verde (o `core` só depende de `comum`)
+- [x] Testes das fases 1–3 passando
 
 **Critério de avanço:** checklist completo → Fase 4.
 
@@ -671,3 +671,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | 1.0 | 2026-11-07 | Criação inicial: 8 fases |
 | 1.1 | 2026-11-07 | Fase 1 concluída: Boot 4.1.2, Modulith 2.1.1 (schema de eventos v2), Gradle 9.8.2; segurança provisória `permitAll` em `auth` até a Fase 7 |
 | 1.2 | 2026-11-07 | Fase 2 concluída: Jackson 3 (`tools.jackson`) do Boot 4; erros do próprio Spring MVC (404, 405, 415, parâmetro ausente) mantêm o status no formato `ErroApi`; regra ArchUnit garante `comum` sem Spring/Jackson |
+| 1.3 | 2026-11-07 | Fase 3 concluída. Acréscimos: `ValorInvalidoException` (`VALOR_INVALIDO`) para entradas degeneradas, já que a RN04 pedia "erro de validação" sem nomear a exceção; taxa **abaixo** de 1e-6 também gera `TaxaForaDaFaixaException` (com `detalhes.limite` = MINIMO ou MAXIMO); `n = 1` usa a solução fechada `PMT/PV − 1`, com a mesma faixa; a bisseção para por \|VP − PV\| < 1e-10 **ou** largura do intervalo < 1e-12 (o DECIMAL64 limita a precisão do valor para PV grande); `parcelaExata`/`taxaImplicitaExata` são package-private para a propriedade de precisão total; segunda propriedade: a taxa achada a partir da parcela em centavos reproduz a mesma parcela; regra ArchUnit: `core` só depende de `java..` e `comum` |

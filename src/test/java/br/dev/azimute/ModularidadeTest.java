@@ -5,6 +5,7 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +32,19 @@ class ModularidadeTest {
                 .should().dependOnClassesThat()
                 .resideInAnyPackage("org.springframework..", "tools.jackson..", "com.fasterxml.jackson..")
                 .because("comum é só tipo de valor, sem Spring e sem I/O (regra 1 da doc 00)")
+                .check(classes);
+    }
+
+    @Test
+    void core_da_calculadora_e_funcao_pura_sobre_comum() {
+        var classes = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("br.dev.azimute.calculadora.core");
+
+        classes().that().doNotHaveSimpleName("package-info")
+                .should().onlyDependOnClassesThat()
+                .resideInAnyPackage("java..", "br.dev.azimute.comum..", "br.dev.azimute.calculadora.core..")
+                .because("o core é espelhado no app e extraível como biblioteca (regra 2 da doc 00)")
                 .check(classes);
     }
 
