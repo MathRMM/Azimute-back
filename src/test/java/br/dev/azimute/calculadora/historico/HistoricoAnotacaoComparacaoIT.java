@@ -1,5 +1,6 @@
 package br.dev.azimute.calculadora.historico;
 
+import br.dev.azimute.ClienteDeTeste;
 import br.dev.azimute.TestcontainersConfig;
 import br.dev.azimute.calculadora.core.JurosCompostos;
 import br.dev.azimute.calculadora.core.TaxaMensal;
@@ -8,12 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.RoundingMode;
@@ -35,7 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Refs: RF22, RF23, RF24, RN12, D3, D4, T3.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
 class HistoricoAnotacaoComparacaoIT {
 
@@ -44,12 +44,14 @@ class HistoricoAnotacaoComparacaoIT {
     private static final String COMPARAR = LISTA + "/comparar";
     private static final String MOTO = "Honda CB 300F";
 
-    @Autowired MockMvc mvc;
+    @Autowired WebApplicationContext contexto;
+    MockMvc mvc;
     @Autowired JdbcClient jdbc;
     @Autowired JsonMapper json;
 
     @BeforeEach
     void limpar() {
+        mvc = ClienteDeTeste.autenticado(contexto, jdbc);
         jdbc.sql("TRUNCATE calculadora.simulacoes").update();
     }
 

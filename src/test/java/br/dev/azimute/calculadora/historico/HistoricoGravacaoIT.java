@@ -1,16 +1,17 @@
 package br.dev.azimute.calculadora.historico;
 
+import br.dev.azimute.ClienteDeTeste;
 import br.dev.azimute.TestcontainersConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,19 +32,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Refs: RF20, RF21, RF25–RF28, RN09–RN11, D2, D6.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
 class HistoricoGravacaoIT {
 
     private static final String LISTA = "/api/calculadora/historico";
     private static final String BASE = LISTA + "/";
 
-    @Autowired MockMvc mvc;
+    @Autowired WebApplicationContext contexto;
+    MockMvc mvc;
     @Autowired JdbcClient jdbc;
     @Autowired tools.jackson.databind.json.JsonMapper json;
 
     @BeforeEach
     void limpar() {
+        mvc = ClienteDeTeste.autenticado(contexto, jdbc);
         jdbc.sql("TRUNCATE calculadora.simulacoes").update();
     }
 

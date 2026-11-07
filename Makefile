@@ -5,7 +5,7 @@
 
 GRADLE := ./gradlew
 
-.PHONY: help setup dev start stop test test-watch test-unit \
+.PHONY: help setup dev start stop test test-watch test-unit dispositivo \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -18,6 +18,7 @@ help:
 	@echo ""
 	@echo "  Desenvolvimento"
 	@echo "    make dev            Sobe app + postgres no perfil dev (docker compose)"
+	@echo "    make dispositivo    Cadastra um dispositivo e mostra o token (uma vez)"
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
 	@echo ""
@@ -28,7 +29,7 @@ help:
 	@echo ""
 	@echo "  Banco de dados"
 	@echo "    make migrate        Migrations rodam na subida da app (Flyway)"
-	@echo "    make seed           [TODO] Seed do usuário inicial chega na Fase 7"
+	@echo "    make seed           Explica como o usuário inicial é criado"
 	@echo ""
 	@echo "  Build e Deploy"
 	@echo "    make build          Gera o jar (testes inclusos)"
@@ -68,7 +69,14 @@ migrate:
 	@echo "Migrations são aplicadas pelo Flyway na subida da aplicação (make dev)."
 
 seed:
-	@echo "[TODO] Seed do usuário inicial chega na Fase 7 (APP_SENHA_INICIAL)."
+	@echo "O usuário 'admin' é criado no primeiro boot a partir de APP_SENHA_INICIAL (.env, mín. 12 caracteres)."
+	@echo "Sem usuário e sem a variável, a aplicação não sobe. Depois do primeiro boot, remova a variável."
+
+dispositivo:
+	@read -p "Senha do admin: " -s SENHA; echo; \
+	read -p "Nome do dispositivo: " NOME; \
+	curl -s -X POST http://localhost:8080/api/auth/dispositivos -H 'Content-Type: application/json' \
+	  -d "{\"login\":\"admin\",\"senha\":\"$$SENHA\",\"nomeDispositivo\":\"$$NOME\"}"; echo
 
 build:
 	$(GRADLE) build

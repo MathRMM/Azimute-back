@@ -19,6 +19,10 @@ spring:
         schema-initialization:
           enabled: false                  # tabela criada pela V001
 
+app:
+  # Senha do usuário "admin" criado no primeiro boot (RF30). Vem de APP_SENHA_INICIAL; remova depois.
+  senha-inicial: ${APP_SENHA_INICIAL:}
+
 management:
   endpoints:
     web:
