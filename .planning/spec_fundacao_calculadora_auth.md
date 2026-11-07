@@ -263,21 +263,24 @@ backend-azimute-core/
 
 **O que fazer:**
 - `compararAVistaVsFinanciado` exatamente pela fórmula D7 do PRD, devolvendo o delta em reais (RF15). Quando não há juros (`parcela × prazo ≤ precoAVista − entrada`), `taxaFinanciamento` = zero e o cálculo segue.
-- `curvaPorEntrada` (RF16) [PENDENTE: confirmar a semântica de `passos` e de `distanciaDaAncora`, não definida na doc 02. Proposta para aprovar antes de iniciar a fase: `passos` pontos igualmente espaçados com entrada de 0 até `valorBem − R$ 0,01`, sempre incluindo o ponto exato da âncora; `distanciaDaAncora = |entrada − entradaAncora| ÷ valorBem`, com escala 4 (0 na âncora, crescente com a extrapolação)].
+- `curvaPorEntrada` (RF16) — **decisão T7** (aprovada pelo usuário em 2026-11-07): `passos` pontos igualmente espaçados com entrada de R$ 0 até o **valor do bem inteiro** (o último ponto é o cenário à vista: parcela e juros zero, como pede o `prompt-simulador-entrada.md`), sempre incluindo o ponto exato da âncora, sem duplicá-lo; `distanciaDaAncora = |entrada − entradaAncora| ÷ valorBem`, escala 4, `HALF_EVEN` (0 na âncora, crescente com a extrapolação, sempre em [0; 1], comparável entre bens de valores diferentes).
 - Taxa constante ao longo da curva; o `core` não modela variação da taxa (premissa declarada da doc 02).
 
 **Testes (TDD):**
-- [ ] Veredito → com o vetor moto 24x (preço à vista = 13.990 + entrada 0, parcela 930,42, 24×) e rendimento de 0,8% a.m., o delta é positivo (à vista vence), e o valor em reais bate com o vetor de comparação
-- [ ] Veredito → com financiamento a 0,6% a.m. e rendimento a 0,8% a.m., o delta é negativo (financiar vence)
-- [ ] Veredito → identidade: `delta == custoTotalFinanciado − rendimentoDoDinheiroGuardado − custoTotalAVista`, sempre (propriedade)
-- [ ] Veredito → taxa de financiamento zero não lança exceção
-- [ ] Curva → o ponto da âncora tem `distanciaDaAncora = 0` e parcela igual a `parcela(valorBem − entradaAncora, taxa, prazo)`
-- [ ] Curva → a parcela é decrescente conforme a entrada cresce; a distância é crescente a partir da âncora
-- [ ] Curva → `passos < 2`, entrada âncora ≥ valor do bem → rejeitados
+- [x] Veredito → com o vetor moto 24x (preço à vista = 13.990 + entrada 0, parcela 930,42, 24×) e rendimento de 0,8% a.m., o delta é positivo (à vista vence), e o valor em reais bate com o vetor de comparação
+- [x] Veredito → com financiamento a 0,6% a.m. e rendimento a 0,8% a.m., o delta é negativo (financiar vence)
+- [x] Veredito → identidade: `delta == custoTotalFinanciado − rendimentoDoDinheiroGuardado − custoTotalAVista`, sempre (propriedade)
+- [x] Veredito → taxa de financiamento zero não lança exceção
+- [x] Curva → o ponto da âncora tem `distanciaDaAncora = 0` e parcela igual a `parcela(valorBem − entradaAncora, taxa, prazo)`
+- [x] Curva → a parcela é decrescente conforme a entrada cresce; a distância é crescente a partir da âncora
+- [x] Curva → o primeiro ponto tem entrada R$ 0; o último tem entrada = valor do bem, com parcela, total pago e juros zero
+- [x] Curva → a âncora aparece uma única vez, mesmo quando coincide com um ponto da grade
+- [x] Curva → `distanciaDaAncora` no exemplo do prompt (bem R$ 19.990, âncora R$ 6.000, ponto R$ 9.000) vale 0,1501
+- [x] Curva → `passos < 2`, entrada âncora ≥ valor do bem ou negativa → rejeitados
 
 **Checklist de validação:**
-- [ ] RF15, RF16 atendidos; pendência de semântica da curva resolvida antes de começar
-- [ ] Testes das fases 1–4 passando
+- [x] RF15, RF16 atendidos; semântica da curva definida (T7)
+- [x] Testes das fases 1–4 passando
 
 **Critério de avanço:** checklist completo → Fase 5.
 
@@ -441,7 +444,6 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6 → Fase 7 → Fas
 - A Fase 7 altera os testes de integração das fases 5 e 6, que passam a enviar o token. Até a Fase 7, os endpoints da calculadora ficam abertos, o que é aceitável porque o backend só roda localmente (PRD, Fora do Escopo).
 - Nenhuma fase roda em paralelo: o contexto é único e as migrations são sequenciais.
 - **Antes da Fase 1:** Docker acessível no WSL e JDK 25 disponível (ou a toolchain automática).
-- **Antes da Fase 4:** resolver o PENDENTE da semântica da curva.
 
 ## 6. Contratos e Interfaces
 
@@ -622,7 +624,7 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | RF08 | 1 | — |
 | RF10–RF14 | 3 | — |
 | RF15 | 4 | Fórmula D7 |
-| RF16 | 4 | Semântica PENDENTE (resolver antes da fase) |
+| RF16 | 4 | Semântica definida na decisão T7 |
 | RF17 | 3 | Ampliado na 4 |
 | RF20, RF21 | 5 | — |
 | RF22 | 6 | D4 |
@@ -661,6 +663,7 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | T4 | Filtro próprio rejeita HTTP com 403, sem redirecionar | Redirecionar depois de receber a senha em HTTP não protege nada; não depende de API deprecada |
 | T5 | Tentativa bloqueada não é registrada | Evita bloqueio perpétuo de quem continua tentando |
 | T6 | jqwik para testes de propriedade | Integração nativa com JUnit 5 |
+| T7 | Curva de R$ 0 ao valor do bem; distância à âncora como fração do valor do bem | Mesma escala para qualquer bem; o ponto à vista é o alvo do usuário, não erro |
 
 ---
 
@@ -672,3 +675,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | 1.1 | 2026-11-07 | Fase 1 concluída: Boot 4.1.2, Modulith 2.1.1 (schema de eventos v2), Gradle 9.8.2; segurança provisória `permitAll` em `auth` até a Fase 7 |
 | 1.2 | 2026-11-07 | Fase 2 concluída: Jackson 3 (`tools.jackson`) do Boot 4; erros do próprio Spring MVC (404, 405, 415, parâmetro ausente) mantêm o status no formato `ErroApi`; regra ArchUnit garante `comum` sem Spring/Jackson |
 | 1.3 | 2026-11-07 | Fase 3 concluída. Acréscimos: `ValorInvalidoException` (`VALOR_INVALIDO`) para entradas degeneradas, já que a RN04 pedia "erro de validação" sem nomear a exceção; taxa **abaixo** de 1e-6 também gera `TaxaForaDaFaixaException` (com `detalhes.limite` = MINIMO ou MAXIMO); `n = 1` usa a solução fechada `PMT/PV − 1`, com a mesma faixa; a bisseção para por \|VP − PV\| < 1e-10 **ou** largura do intervalo < 1e-12 (o DECIMAL64 limita a precisão do valor para PV grande); `parcelaExata`/`taxaImplicitaExata` são package-private para a propriedade de precisão total; segunda propriedade: a taxa achada a partir da parcela em centavos reproduz a mesma parcela; regra ArchUnit: `core` só depende de `java..` e `comum` |
+| 1.4 | 2026-11-07 | Decisão T7 (semântica da curva) aprovada; Fase 4 concluída. Acréscimos: no `Comparador`, taxa abaixo de 0,0001% a.m. vira `ZERO` (acima de 30% o erro se propaga); conveniências `Veredito.aVistaVence()` e `PontoSensibilidade.ancora()`; 4 vetores de comparação calculados de forma independente |

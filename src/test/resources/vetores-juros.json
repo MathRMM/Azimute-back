@@ -44,5 +44,34 @@
       "totalPago": "10050.00", "totalJuros": "50.00"
     }
   ],
-  "comparacao": []
+  "comparacao": [
+    {
+      "caso": "moto_24x_contra_cdb",
+      "precoAVista": "13990.00", "entrada": "0.00", "parcela": "930.42", "prazo": 24, "rendimento": "0.008",
+      "custoTotalFinanciado": "22330.08", "custoTotalAVista": "13990.00",
+      "rendimentoDoDinheiroGuardado": "2086.19", "delta": "6253.89",
+      "taxaFinanciamento": "0.0413642", "toleranciaTaxa": "0.0000001"
+    },
+    {
+      "caso": "promocional_0_6_contra_cdb",
+      "precoAVista": "13990.00", "entrada": "0.00", "parcela": "627.64", "prazo": 24, "rendimento": "0.008",
+      "custoTotalFinanciado": "15063.36", "custoTotalAVista": "13990.00",
+      "rendimentoDoDinheiroGuardado": "1407.29", "delta": "-333.93",
+      "taxaFinanciamento": "0.0060003", "toleranciaTaxa": "0.0000001"
+    },
+    {
+      "caso": "com_entrada_moto_prompt",
+      "precoAVista": "19990.00", "entrada": "6000.00", "parcela": "930.42", "prazo": 24, "rendimento": "0.008",
+      "custoTotalFinanciado": "28330.08", "custoTotalAVista": "19990.00",
+      "rendimentoDoDinheiroGuardado": "2086.19", "delta": "6253.89",
+      "taxaFinanciamento": "0.0413642", "toleranciaTaxa": "0.0000001"
+    },
+    {
+      "caso": "sem_juros_contra_cdb",
+      "precoAVista": "1200.00", "entrada": "0.00", "parcela": "100.00", "prazo": 12, "rendimento": "0.008",
+      "custoTotalFinanciado": "1200.00", "custoTotalAVista": "1200.00",
+      "rendimentoDoDinheiroGuardado": "60.14", "delta": "-60.14",
+      "taxaFinanciamento": "0", "toleranciaTaxa": "0"
+    }
+  ]
 }

@@ -27,17 +27,35 @@ final class VetoresDeOuro {
         }
     }
 
-    record Arquivo(List<VetorTaxa> taxaImplicita) {}
+    record VetorComparacao(String caso, String precoAVista, String entrada, String parcela, int prazo,
+                           String rendimento, String custoTotalFinanciado, String custoTotalAVista,
+                           String rendimentoDoDinheiroGuardado, String delta, String taxaFinanciamento,
+                           String toleranciaTaxa) {
+        @Override
+        public String toString() {
+            return caso;
+        }
+    }
+
+    record Arquivo(List<VetorTaxa> taxaImplicita, List<VetorComparacao> comparacao) {}
 
     private VetoresDeOuro() {}
 
     static List<VetorTaxa> taxaImplicita() {
+        return ler().taxaImplicita();
+    }
+
+    static List<VetorComparacao> comparacao() {
+        return ler().comparacao();
+    }
+
+    private static Arquivo ler() {
         try (InputStream in = VetoresDeOuro.class.getResourceAsStream("/vetores-juros.json")) {
             if (in == null) {
                 throw new IllegalStateException("vetores-juros.json não encontrado no classpath de teste");
             }
             return JsonMapper.builder().disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    .build().readValue(in, Arquivo.class).taxaImplicita();
+                    .build().readValue(in, Arquivo.class);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
