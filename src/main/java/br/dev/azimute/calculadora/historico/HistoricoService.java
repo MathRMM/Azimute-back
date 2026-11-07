@@ -1,9 +1,13 @@
 package br.dev.azimute.calculadora.historico;
 
+import br.dev.azimute.comum.Dinheiro;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Histórico de simulações: o propósito é negociação — comparar propostas depois, não de memória.
@@ -46,6 +50,58 @@ public class HistoricoService {
     public List<SimulacaoSalva> listar(String bem) {
         return repositorio.listar(bem == null || bem.isBlank() ? null : bem);
     }
+
+    /** Só observação e status (RF23). Valores de simulação salva são imutáveis. */
+    SimulacaoSalva anotar(SimulacaoId id, Anotacao anotacao) {
+        repositorio.buscar(id).orElseThrow(() -> new SimulacaoNaoEncontradaException(id));
+        repositorio.anotar(id, anotacao);
+        return repositorio.buscar(id).orElseThrow(() -> new SimulacaoNaoEncontradaException(id));
+    }
+
+    /**
+     * Idempotente: excluir o que não existe não é erro (decisão T3). Proposta que é âncora de estimativas não
+     * pode ser excluída (D3).
+     */
+    void excluir(SimulacaoId id) {
+        var estimativas = repositorio.estimativasAncoradasEm(id);
+        if (!estimativas.isEmpty()) {
+            throw new SimulacaoEAncoraException(estimativas);
+        }
+        try {
+            repositorio.excluir(id);
+        } catch (DataIntegrityViolationException e) {
+            // Uma estimativa foi gravada entre a verificação e a exclusão: a FK barrou.
+            throw new SimulacaoEAncoraException(repositorio.estimativasAncoradasEm(id));
+        }
+    }
+
+    /**
+     * Compara as propostas de um bem (RF22, D4). A melhor é a de menor taxa mensal — a única medida comparável
+     * entre prazos diferentes —, com desempate pela data mais recente. Estimativas ficam de fora por padrão:
+     * comparar a própria extrapolação com uma oferta real é comparar com um número que ninguém prometeu.
+     */
+    Comparacao comparar(String bem, boolean incluirEstimativas) {
+        if (bem == null || bem.isBlank()) {
+            throw new DadosInvalidosException(Map.of("bem", "informe o bem a comparar"));
+        }
+        var propostas = repositorio.listar(bem).stream()
+                .filter(s -> incluirEstimativas || s.dados().origem() == OrigemSimulacao.PROPOSTA)
+                .sorted(MELHOR_PRIMEIRO)
+                .toList();
+
+        if (propostas.isEmpty()) {
+            return new Comparacao(bem.strip(), propostas, Dinheiro.ZERO);
+        }
+        var melhor = propostas.getFirst();
+        var pior = propostas.getLast();
+        var economia = pior.dados().totalJuros().menos(melhor.dados().totalJuros());
+        return new Comparacao(melhor.dados().bem(), propostas, economia);
+    }
+
+    private static final Comparator<SimulacaoSalva> MELHOR_PRIMEIRO =
+            Comparator.comparing((SimulacaoSalva s) -> s.dados().taxaMensal())
+                    .thenComparing(s -> s.dados().data(), Comparator.reverseOrder())
+                    .thenComparing(s -> s.dados().calculadaEm(), Comparator.reverseOrder());
 
     /** RN10. O banco tem as mesmas regras em CHECK; aqui elas viram erro legível. */
     private static void validarValores(DadosSimulacao d) {

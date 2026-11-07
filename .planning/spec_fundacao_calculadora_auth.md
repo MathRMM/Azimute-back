@@ -339,19 +339,19 @@ backend-azimute-core/
 - `GET /comparar?bem=…[&incluirEstimativas=false]` (RF22, D4): só `PROPOSTA` por padrão; a melhor é a de menor `taxa_mensal`, com desempate pela `data` mais recente; `economiaEntreMelhorEPior = total_juros(pior) − total_juros(melhor)`; cada item traz `prazo` e `valorFinanciado`. `bem` é obrigatório (ausente → 422).
 
 **Testes (TDD):**
-- [ ] Patch → `observacao` e `status=ACEITA` → 200, refletidos no `GET`
-- [ ] Patch → corpo com `parcela` → 422 `CAMPO_NAO_EDITAVEL`, e nada muda
-- [ ] Patch → ID inexistente → 404
-- [ ] Delete → proposta sem estimativas → 204 e some da lista; repetir → 204
-- [ ] Delete → proposta âncora → 409 `SIMULACAO_E_ANCORA` com os IDs das estimativas
-- [ ] Comparar → duas propostas coerentes (que passam pela conferência do snapshot) do mesmo bem, com taxas diferentes → a de menor taxa é a melhor, e a economia é exatamente a diferença dos `totalJuros` (os números do exemplo da doc 02 são ilustrativos e não são coerentes entre si; o teste usa valores gerados pelo `core`)
-- [ ] Comparar → uma estimativa com taxa menor não vira a "melhor" por padrão; com `incluirEstimativas=true`, entra
-- [ ] Comparar → uma proposta só → ela é a melhor e a economia é `"0.00"`; nenhuma → lista vazia e `"0.00"`
-- [ ] Comparar → empate de taxa → vence a data mais recente
+- [x] Patch → `observacao` e `status=ACEITA` → 200, refletidos no `GET`
+- [x] Patch → corpo com `parcela` → 422 `CAMPO_NAO_EDITAVEL`, e nada muda
+- [x] Patch → ID inexistente → 404
+- [x] Delete → proposta sem estimativas → 204 e some da lista; repetir → 204
+- [x] Delete → proposta âncora → 409 `SIMULACAO_E_ANCORA` com os IDs das estimativas
+- [x] Comparar → duas propostas coerentes (que passam pela conferência do snapshot) do mesmo bem, com taxas diferentes → a de menor taxa é a melhor, e a economia é exatamente a diferença dos `totalJuros` (os números do exemplo da doc 02 são ilustrativos e não são coerentes entre si; o teste usa valores gerados pelo `core`)
+- [x] Comparar → uma estimativa com taxa menor não vira a "melhor" por padrão; com `incluirEstimativas=true`, entra
+- [x] Comparar → uma proposta só → ela é a melhor e a economia é `"0.00"`; nenhuma → lista vazia e `"0.00"`
+- [x] Comparar → empate de taxa → vence a data mais recente
 
 **Checklist de validação:**
-- [ ] RF22–RF24, D3, D4 atendidos
-- [ ] Testes das fases 1–6 passando
+- [x] RF22–RF24, D3, D4 atendidos
+- [x] Testes das fases 1–6 passando
 
 **Critério de avanço:** checklist completo → Fase 7.
 
@@ -677,3 +677,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | 1.3 | 2026-11-07 | Fase 3 concluída. Acréscimos: `ValorInvalidoException` (`VALOR_INVALIDO`) para entradas degeneradas, já que a RN04 pedia "erro de validação" sem nomear a exceção; taxa **abaixo** de 1e-6 também gera `TaxaForaDaFaixaException` (com `detalhes.limite` = MINIMO ou MAXIMO); `n = 1` usa a solução fechada `PMT/PV − 1`, com a mesma faixa; a bisseção para por \|VP − PV\| < 1e-10 **ou** largura do intervalo < 1e-12 (o DECIMAL64 limita a precisão do valor para PV grande); `parcelaExata`/`taxaImplicitaExata` são package-private para a propriedade de precisão total; segunda propriedade: a taxa achada a partir da parcela em centavos reproduz a mesma parcela; regra ArchUnit: `core` só depende de `java..` e `comum` |
 | 1.4 | 2026-11-07 | Decisão T7 (semântica da curva) aprovada; Fase 4 concluída. Acréscimos: no `Comparador`, taxa abaixo de 0,0001% a.m. vira `ZERO` (acima de 30% o erro se propaga); conveniências `Veredito.aVistaVence()` e `PontoSensibilidade.ancora()`; 4 vetores de comparação calculados de forma independente |
 | 1.5 | 2026-11-07 | Fase 5 concluída. Desvios: (a) **tolerância de R$ 0,01 na parcela da estimativa** em vez de exata (D6): o app calcula com a taxa da âncora em precisão total e o servidor só tem 8 casas, e uma rejeição indevida travaria a fila offline, que não descarta itens; (b) inserção com `INSERT … ON CONFLICT (id) DO NOTHING` via `JdbcClient` em vez de `JdbcAggregateTemplate.insert` + captura de PK (sem transação abortada na corrida); (c) o trigger também protege `valor_financiado` e `taxa_anual`, que são snapshot; (d) proposta com `ancoraId` → `ANCORA_INVALIDA`; âncora de estimativa precisa ser `PROPOSTA`; (e) DTOs e erros no pacote `historico`, sem subpacotes `dto/` e `erros/` (tudo package-private) |
+| 1.6 | 2026-11-07 | Fase 6 concluída. Detalhes: `PATCH` lê o corpo como mapa (campo ausente não muda; `observacao: null` ou em branco apaga); `status: null` → 422; a resposta da comparação também traz `local`, `origem`, `status` e `parcela` de cada item; `DELETE` captura a violação de FK de uma estimativa gravada no meio da exclusão e responde 409; `economiaEntreMelhorEPior` pode ser **negativa** quando a proposta de menor taxa tem prazo maior (juros totais maiores), o que é coerente com a D4 |

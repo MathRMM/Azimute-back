@@ -72,6 +72,31 @@ class SimulacaoRepository {
         return linhas == 1;
     }
 
+    /** Altera só os campos anotativos. O trigger do banco barra qualquer outro (RN09). */
+    void anotar(SimulacaoId id, Anotacao anotacao) {
+        var sets = new java.util.ArrayList<String>();
+        if (anotacao.alteraObservacao()) sets.add("observacao = :observacao");
+        if (anotacao.status() != null) sets.add("status = :status");
+        if (sets.isEmpty()) return;
+
+        var comando = jdbc.sql("UPDATE calculadora.simulacoes SET " + String.join(", ", sets) + " WHERE id = :id")
+                .param("id", id.valor());
+        if (anotacao.alteraObservacao()) comando = comando.param("observacao", anotacao.observacao());
+        if (anotacao.status() != null) comando = comando.param("status", anotacao.status().name());
+        comando.update();
+    }
+
+    List<String> estimativasAncoradasEm(SimulacaoId id) {
+        return jdbc.sql("SELECT id FROM calculadora.simulacoes WHERE ancora_id = :id ORDER BY calculada_em")
+                .param("id", id.valor())
+                .query((rs, linha) -> rs.getObject("id", UUID.class).toString())
+                .list();
+    }
+
+    void excluir(SimulacaoId id) {
+        jdbc.sql("DELETE FROM calculadora.simulacoes WHERE id = :id").param("id", id.valor()).update();
+    }
+
     /** Ordem: data mais recente primeiro. Filtro por bem ignora maiúsculas e espaços nas pontas. */
     List<SimulacaoSalva> listar(String bem) {
         var sql = "SELECT " + COLUNAS + " FROM calculadora.simulacoes"
