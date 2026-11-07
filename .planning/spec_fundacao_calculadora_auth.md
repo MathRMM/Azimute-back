@@ -162,20 +162,20 @@ backend-azimute-core/
 - Pacotes vazios dos módulos futuros (RF08); `comum` e `plataforma` como módulos `OPEN`; `calculadora.core` como interface nomeada.
 
 **Testes (TDD):**
-- [ ] `ModularidadeTest` → dada a estrutura de pacotes, quando verificar os módulos, então não há violação; e um import proibido de exemplo (validado manualmente uma vez) faz o teste falhar
-- [ ] `FundacaoIT` → dado o contexto com Postgres 18, quando subir, então o Flyway aplica a V001 sem erro
-- [ ] `FundacaoIT` → quando executar `SELECT uuidv7()`, então retorna um UUID versão 7
-- [ ] `FundacaoIT` → quando consultar `current_setting('TimeZone')` pela conexão da app e `ZoneId.systemDefault()`, então ambos são `America/Sao_Paulo`
-- [ ] `FundacaoIT` → quando publicar um evento de teste dentro de uma transação, então ele aparece registrado na tabela de publicações (RF05)
-- [ ] `FundacaoIT` → quando `GET /actuator/health`, então 200 com `{"status":"UP"}` e sem `components`/`details`
-- [ ] `FundacaoIT` → dado um `UPDATE` em uma tabela de teste com trigger `impedir_alteracao`, então o banco lança exceção com "Registro imutável"
+- [x] `ModularidadeTest` → dada a estrutura de pacotes, quando verificar os módulos, então não há violação; e um import proibido de exemplo (validado manualmente uma vez) faz o teste falhar
+- [x] `FundacaoIT` → dado o contexto com Postgres 18, quando subir, então o Flyway aplica a V001 sem erro
+- [x] `FundacaoIT` → quando executar `SELECT uuidv7()`, então retorna um UUID versão 7
+- [x] `FundacaoIT` → quando consultar `current_setting('TimeZone')` pela conexão da app e `ZoneId.systemDefault()`, então ambos são `America/Sao_Paulo`
+- [x] `FundacaoIT` → quando publicar um evento de teste dentro de uma transação, então ele aparece registrado na tabela de publicações (RF05)
+- [x] `FundacaoIT` → quando `GET /actuator/health`, então 200 com `{"status":"UP"}` e sem `components`/`details`
+- [x] `FundacaoIT` → dado um `UPDATE` em uma tabela de teste com trigger `impedir_alteracao`, então o banco lança exceção com "Registro imutável"
 
 **Checklist de validação:**
-- [ ] `./gradlew build` passa com Java 25 (RNF01)
-- [ ] `docker compose up` sobe app + postgres, e o health responde (RNF11)
-- [ ] Nenhuma propriedade `ddl-auto` ou inicialização automática de schema configurada (RNF03)
-- [ ] `.env` está no `.gitignore`; só o `.env.example` é versionado (SEC05)
-- [ ] Todos os testes desta fase passando
+- [x] `./gradlew build` passa com Java 25 (RNF01)
+- [x] `docker compose up` sobe app + postgres, e o health responde (RNF11)
+- [x] Nenhuma propriedade `ddl-auto` ou inicialização automática de schema configurada (RNF03)
+- [x] `.env` está no `.gitignore`; só o `.env.example` é versionado (SEC05)
+- [x] Todos os testes desta fase passando
 
 **Critério de avanço:** checklist completo → Fase 2.
 
@@ -669,3 +669,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | Versão | Data | Alteração |
 |---|---|---|
 | 1.0 | 2026-11-07 | Criação inicial: 8 fases |
+| 1.1 | 2026-11-07 | Fase 1 concluída: Boot 4.1.2, Modulith 2.1.1 (schema de eventos v2), Gradle 9.8.2; segurança provisória `permitAll` em `auth` até a Fase 7 |

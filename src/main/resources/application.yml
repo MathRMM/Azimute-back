@@ -1,0 +1,35 @@
+# Configuração comum. Sem perfil ativo, valem as regras seguras (D1).
+spring:
+  application:
+    name: azimute-core
+  threads:
+    virtual:
+      enabled: true                       # RNF06
+  jackson:
+    time-zone: America/Sao_Paulo          # RNF05
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/azimute}
+    username: ${DB_USUARIO:azimute}
+    password: ${DB_SENHA:}
+  flyway:
+    locations: classpath:db/migration     # schema só por migrations (RNF03)
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false                  # tabela criada pela V001
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health                   # SEC09
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+
+server:
+  error:
+    include-stacktrace: never             # SEC06
+    include-message: never

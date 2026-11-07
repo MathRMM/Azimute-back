@@ -1,0 +1,8 @@
+.git
+.gradle
+.idea
+.planning
+assistente-docs
+build
+.env
+.env.*
