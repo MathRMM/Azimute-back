@@ -1,0 +1,4 @@
+# Perfil local: HTTP puro aceito, log legível no console.
+logging:
+  level:
+    br.dev.azimute: debug

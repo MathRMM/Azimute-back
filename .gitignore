@@ -18,3 +18,9 @@ out/
 .DS_Store
 Thumbs.db
 *.log
+
+# Docker local
+compose.override.yaml
+
+# jqwik
+.jqwik-database
