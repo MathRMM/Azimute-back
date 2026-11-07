@@ -305,23 +305,23 @@ backend-azimute-core/
 - A calculadora não publica eventos (RN13), e não existe endpoint de cálculo (RN14).
 
 **Testes (TDD):**
-- [ ] Gravação → dado um corpo válido com o vetor moto 36x, quando `PUT`, então 200 e o registro aparece no `GET`
-- [ ] Idempotência → mesmo `PUT` duas vezes → um registro só, ambas as respostas 200 e iguais
-- [ ] Idempotência → mesmo ID com `parcela` diferente → 409 `SIMULACAO_DIVERGENTE`
-- [ ] Idempotência → mesmo ID com só `observacao` diferente → 200 com o registro original
-- [ ] Concorrência → dois `PUT` simultâneos com o mesmo ID → um registro, nenhuma resposta 500
-- [ ] Snapshot → `taxaMensal` enviada fora da tolerância → 422 `SNAPSHOT_DIVERGENTE`
-- [ ] Snapshot → `totalJuros` errado em R$ 0,01 → 422
-- [ ] Estimativa → sem `ancoraId` → 422 (aplicação) e, num `INSERT` direto, violação da constraint (banco)
-- [ ] Estimativa → com âncora válida e parcela recalculada pela taxa da âncora → 200
-- [ ] Banco → `UPDATE` de `parcela` direto no SQL → exceção do trigger; `UPDATE` de `observacao` → permitido
-- [ ] Validação → `entrada ≥ valorBem`, `prazo = 0`, `parcela` negativa → 422 `DADOS_INVALIDOS`
-- [ ] Filtro → `?bem=honda cb 300f ` encontra `"Honda CB 300F"`
-- [ ] `calculadaEm` é preservado como veio do cliente; `sincronizadaEm` é preenchido pelo servidor
+- [x] Gravação → dado um corpo válido com o vetor moto 36x, quando `PUT`, então 200 e o registro aparece no `GET`
+- [x] Idempotência → mesmo `PUT` duas vezes → um registro só, ambas as respostas 200 e iguais
+- [x] Idempotência → mesmo ID com `parcela` diferente → 409 `SIMULACAO_DIVERGENTE`
+- [x] Idempotência → mesmo ID com só `observacao` diferente → 200 com o registro original
+- [x] Concorrência → dois `PUT` simultâneos com o mesmo ID → um registro, nenhuma resposta 500
+- [x] Snapshot → `taxaMensal` enviada fora da tolerância → 422 `SNAPSHOT_DIVERGENTE`
+- [x] Snapshot → `totalJuros` errado em R$ 0,01 → 422
+- [x] Estimativa → sem `ancoraId` → 422 (aplicação) e, num `INSERT` direto, violação da constraint (banco)
+- [x] Estimativa → com âncora válida e parcela recalculada pela taxa da âncora → 200
+- [x] Banco → `UPDATE` de `parcela` direto no SQL → exceção do trigger; `UPDATE` de `observacao` → permitido
+- [x] Validação → `entrada ≥ valorBem`, `prazo = 0`, `parcela` negativa → 422 `DADOS_INVALIDOS`
+- [x] Filtro → `?bem=honda cb 300f ` encontra `"Honda CB 300F"`
+- [x] `calculadaEm` é preservado como veio do cliente; `sincronizadaEm` é preenchido pelo servidor
 
 **Checklist de validação:**
-- [ ] RF20, RF21, RF25–RF28, RN09–RN14 atendidos
-- [ ] Testes das fases 1–5 passando
+- [x] RF20, RF21, RF25–RF28, RN09–RN14 atendidos
+- [x] Testes das fases 1–5 passando
 
 **Critério de avanço:** checklist completo → Fase 6.
 
@@ -676,3 +676,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | 1.2 | 2026-11-07 | Fase 2 concluída: Jackson 3 (`tools.jackson`) do Boot 4; erros do próprio Spring MVC (404, 405, 415, parâmetro ausente) mantêm o status no formato `ErroApi`; regra ArchUnit garante `comum` sem Spring/Jackson |
 | 1.3 | 2026-11-07 | Fase 3 concluída. Acréscimos: `ValorInvalidoException` (`VALOR_INVALIDO`) para entradas degeneradas, já que a RN04 pedia "erro de validação" sem nomear a exceção; taxa **abaixo** de 1e-6 também gera `TaxaForaDaFaixaException` (com `detalhes.limite` = MINIMO ou MAXIMO); `n = 1` usa a solução fechada `PMT/PV − 1`, com a mesma faixa; a bisseção para por \|VP − PV\| < 1e-10 **ou** largura do intervalo < 1e-12 (o DECIMAL64 limita a precisão do valor para PV grande); `parcelaExata`/`taxaImplicitaExata` são package-private para a propriedade de precisão total; segunda propriedade: a taxa achada a partir da parcela em centavos reproduz a mesma parcela; regra ArchUnit: `core` só depende de `java..` e `comum` |
 | 1.4 | 2026-11-07 | Decisão T7 (semântica da curva) aprovada; Fase 4 concluída. Acréscimos: no `Comparador`, taxa abaixo de 0,0001% a.m. vira `ZERO` (acima de 30% o erro se propaga); conveniências `Veredito.aVistaVence()` e `PontoSensibilidade.ancora()`; 4 vetores de comparação calculados de forma independente |
+| 1.5 | 2026-11-07 | Fase 5 concluída. Desvios: (a) **tolerância de R$ 0,01 na parcela da estimativa** em vez de exata (D6): o app calcula com a taxa da âncora em precisão total e o servidor só tem 8 casas, e uma rejeição indevida travaria a fila offline, que não descarta itens; (b) inserção com `INSERT … ON CONFLICT (id) DO NOTHING` via `JdbcClient` em vez de `JdbcAggregateTemplate.insert` + captura de PK (sem transação abortada na corrida); (c) o trigger também protege `valor_financiado` e `taxa_anual`, que são snapshot; (d) proposta com `ancoraId` → `ANCORA_INVALIDA`; âncora de estimativa precisa ser `PROPOSTA`; (e) DTOs e erros no pacote `historico`, sem subpacotes `dto/` e `erros/` (tudo package-private) |
