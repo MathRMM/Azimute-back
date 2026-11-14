@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,6 +44,24 @@ class ConciliacaoRepository {
                 .param("conta", conta.valor())
                 .query(ConciliacaoRepository::mapear)
                 .optional();
+    }
+
+    /** A base do saldo numa data: a conciliação mais recente com data igual ou anterior a {@code data}. */
+    Optional<Conciliacao> ultimaAte(ContaId conta, LocalDate data) {
+        return jdbc.sql("SELECT " + COLUNAS + " FROM contas.conciliacoes WHERE conta_id = :conta "
+                        + "AND data <= :data ORDER BY data DESC LIMIT 1")
+                .param("conta", conta.valor()).param("data", data)
+                .query(ConciliacaoRepository::mapear)
+                .optional();
+    }
+
+    /** Conciliações da conta entre {@code de} e {@code ate}, inclusive, em ordem de data (marcos do extrato). */
+    List<Conciliacao> doPeriodo(ContaId conta, LocalDate de, LocalDate ate) {
+        return jdbc.sql("SELECT " + COLUNAS + " FROM contas.conciliacoes WHERE conta_id = :conta "
+                        + "AND data BETWEEN :de AND :ate ORDER BY data")
+                .param("conta", conta.valor()).param("de", de).param("ate", ate)
+                .query(ConciliacaoRepository::mapear)
+                .list();
     }
 
     private static Conciliacao mapear(ResultSet rs, int linha) throws SQLException {
