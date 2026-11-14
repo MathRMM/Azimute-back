@@ -53,6 +53,7 @@ Todas as consultas de movimentação filtram `deleted_at IS NULL`. As três colu
 | T3 | Excluir movimentação que não existe ou já excluída → 204. Restaurar movimentação que não existe → 404; que não está excluída → 200 sem mudança | Mesmo comportamento da exclusão de simulação (decisão T3 do SPEC anterior): o reenvio pela fila não vira erro |
 | T8 | `updated_at` é preenchido pelo SQL da aplicação (`SET updated_at = now()`), não por trigger | Decisão 14 da doc 00: trigger só para imutabilidade e auditoria |
 | T9 | `PUT` com o ID de uma movimentação excluída → 409 `MOVIMENTACAO_EXCLUIDA` | O reenvio não pode ressuscitar o que foi excluído; para voltar, existe o `restaurar` |
+| T10 | Saldo numa data anterior à primeira conciliação da conta é zero | A conta ainda não tinha marco; aparece no `saldoInicial` de um extrato que começa no dia da criação |
 | T4 | Reenvio de conciliação idêntica (mesma conta, mesma data, mesmo `saldoReal`) → 200 com a existente; mesma data com outro `saldoReal` → 422 `CONCILIACAO_FORA_DE_ORDEM` (P3) | Conciliação feita sem sinal também passa pela fila offline |
 | T5 | A fachada não deixa duas movimentações para o mesmo `gasto_id`, `ganho_id` ou (`cartao_id`, `fatura_comp`). Índices únicos parciais no banco; o reenvio devolve a existente | É o equivalente da idempotência para chamadas entre módulos, e impede contagem dupla |
 | T6 | Apelido único ignorando maiúsculas e espaços nas pontas: índice único em `lower(btrim(apelido))` | RN09, garantida no banco e não só na aplicação |
@@ -224,28 +225,28 @@ backend-azimute-core/
 - Lançamento com atraso vale pela data da movimentação (P2). Data futura é aceita e conta no saldo atual (RN15).
 
 **Testes (TDD):**
-- [ ] Unitário → mesmo ID e mesmo corpo → nenhuma inserção nova, devolve a existente
-- [ ] Unitário → mesmo ID com valor diferente → `MOVIMENTACAO_DIVERGENTE`
-- [ ] Unitário → excluir `SAIDA` → `MOVIMENTACAO_DE_OUTRO_MODULO`; excluir ID inexistente ou já excluído → sem erro
-- [ ] Unitário → restaurar ID inexistente → 404; restaurar movimentação viva → sem mudança
-- [ ] Unitário → `PUT` com ID de movimentação excluída → `MOVIMENTACAO_EXCLUIDA`
-- [ ] Integração → transferência de R$ 1.500 do Nubank para o CDB → Nubank −1.500, CDB +1.500 (critério 2)
-- [ ] Integração → `PUT` repetido → um registro só, as duas respostas 200 e iguais
-- [ ] Integração → dois `PUT` simultâneos com o mesmo ID → um registro, nenhuma resposta 500
-- [ ] Integração → transferência para a mesma conta → 422 (critério 3, lado da aplicação)
-- [ ] Integração → rendimento de R$ 42 → saldo +42 (critério 5)
-- [ ] Integração → transferência que deixa a origem negativa → 200 (RN11)
-- [ ] Integração → transferência com data daqui a 10 dias → 200 e já conta no saldo atual (RN15)
-- [ ] Integração → movimentação em conta inativa → 422; em conta inexistente → 404
-- [ ] Integração → excluir transferência → os saldos voltam ao que eram e ela some do extrato, mas a linha continua no banco com `deleted_at` preenchido
-- [ ] Integração → restaurar a transferência → os saldos e o extrato voltam a contá-la
-- [ ] Integração → extrato de setembro: só as movimentações do mês, com saldo inicial e final corretos (critério 10)
-- [ ] Integração → movimentação com data igual à da última conciliação → aparece no extrato e não altera o saldo atual (P2)
-- [ ] Borda → período sem movimentações → lista vazia e saldo inicial igual ao final
+- [x] Unitário → mesmo ID e mesmo corpo → nenhuma inserção nova, devolve a existente
+- [x] Unitário → mesmo ID com valor diferente → `MOVIMENTACAO_DIVERGENTE`
+- [x] Unitário → excluir `SAIDA` → `MOVIMENTACAO_DE_OUTRO_MODULO`; excluir ID inexistente ou já excluído → sem erro
+- [x] Unitário → restaurar ID inexistente → 404; restaurar movimentação viva → sem mudança
+- [x] Unitário → `PUT` com ID de movimentação excluída → `MOVIMENTACAO_EXCLUIDA`
+- [x] Integração → transferência de R$ 1.500 do Nubank para o CDB → Nubank −1.500, CDB +1.500 (critério 2)
+- [x] Integração → `PUT` repetido → um registro só, as duas respostas 200 e iguais
+- [x] Integração → dois `PUT` simultâneos com o mesmo ID → um registro, nenhuma resposta 500
+- [x] Integração → transferência para a mesma conta → 422 (critério 3, lado da aplicação)
+- [x] Integração → rendimento de R$ 42 → saldo +42 (critério 5)
+- [x] Integração → transferência que deixa a origem negativa → 200 (RN11)
+- [x] Integração → transferência com data daqui a 10 dias → 200 e já conta no saldo atual (RN15)
+- [x] Integração → movimentação em conta inativa → 422; em conta inexistente → 404
+- [x] Integração → excluir transferência → os saldos voltam ao que eram e ela some do extrato, mas a linha continua no banco com `deleted_at` preenchido
+- [x] Integração → restaurar a transferência → os saldos e o extrato voltam a contá-la
+- [x] Integração → extrato de setembro: só as movimentações do mês, com saldo inicial e final corretos (critério 10)
+- [x] Integração → movimentação com data igual à da última conciliação → aparece no extrato e não altera o saldo atual (P2)
+- [x] Borda → período sem movimentações → lista vazia e saldo inicial igual ao final
 
 **Checklist de validação:**
-- [ ] RF10–RF15, RN02, RN04 (aplicação), RN05, RN08, RN10, RN11, RN14, RN15, P1, P2 atendidos
-- [ ] Testes das fases 1–3 passando
+- [x] RF10–RF15, RN02, RN04 (aplicação), RN05, RN08, RN10, RN11, RN14, RN15, P1, P2 atendidos
+- [x] Testes das fases 1–3 passando
 
 **Critério de avanço:** checklist completo → Fase 4.
 
@@ -584,3 +585,4 @@ Todos: 401 sem token (SEC01). Valores monetários como string decimal.
 | 1.2 | 2026-11-14 | PRD v1.8: data futura aceita (RN15, pendência resolvida); nova **Fase 6**, com o padrão de datas nas tabelas da calculadora e do auth e exclusão lógica de simulação (RF40–RF43, `V005`). Status aprovado |
 | 1.3 | 2026-11-14 | Fase 1 concluída: `V004__contas.sql` e modelo (`Movimentacao` selada com `tipo()`, `sentidoPara()` e `efeitoNoSaldo()`). Red: compilação sem os tipos e `SchemaContasIT` com 15 falhas sem a migration; green: 321 testes, cobertura 98,8% de linhas e 97,9% de ramos. Testes extras além da lista: `ContaTest` (campos obrigatórios), checagem de `fatura_comp` no dia 1 e de apelido em branco. Makefile sem alvo novo nesta fase (os alvos de conta entram na Fase 5) |
 | 1.4 | 2026-11-14 | Fase 2 concluída. Desvios: (a) o cheque especial do `Saldo` virou um objeto aninhado `chequeEspecial { limite, emUso, disponivel, acimaDoLimite }`, nulo fora de conta corrente, em vez de três campos soltos (o JSON fica sem campos sem sentido em poupança e investimento); (b) os valores do `POST /api/contas` chegam como `BigDecimal` com `@Digits(fraction = 2)`, porque o `Dinheiro` arredondaria 3 casas em silêncio; (c) a resposta do saldo traz `ultimaConciliacao { data, saldoReal }`; (d) `GET /api/contas` lê o saldo conta a conta (consulta agregada fica para a Fase 5, como no risco da seção 7). Red: compilação sem as 12 classes da fase; green: 354 testes, cobertura 99,0% de linhas e 97,4% de ramos |
+| 1.5 | 2026-11-14 | Fase 3 concluída. Decisão T10 (saldo antes da primeira conciliação é zero). Desvios de forma: os endpoints de movimentação ficaram num `MovimentacoesController` próprio, sob o mesmo `/api/contas`; o extrato devolve `{ conta, de, ate, saldoInicial, saldoFinal, linhas[{ id, tipo, data, valor, sentido, contraparte, motivo }], conciliacoes[{ data, saldoReal, saldoCalculado, divergencia, justificativa }] }`. Teste extra: `MovimentacaoRepositoryIT`, ida e volta no banco dos cinco tipos. Red: compilação sem as 16 classes e métodos da fase; green: 389 testes, cobertura 98,8% de linhas e 96,0% de ramos |

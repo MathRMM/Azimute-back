@@ -75,6 +75,16 @@ class ContaService {
         return saldoDe(buscar(id));
     }
 
+    /**
+     * Saldo no fim do dia {@code data}: a conciliação mais recente até essa data mais as movimentações entre as
+     * duas (RN06). Antes da primeira conciliação a conta ainda não tinha marco, e o saldo é zero (T10).
+     */
+    Dinheiro saldoEm(ContaId conta, LocalDate data) {
+        return conciliacoes.ultimaAte(conta, data)
+                .map(base -> base.saldoReal().mais(movimentacoes.resumoEntre(conta, base.data(), data).efeito()))
+                .orElse(Dinheiro.ZERO);
+    }
+
     private ContaComSaldo comSaldo(Conta conta) {
         return new ContaComSaldo(conta, saldoDe(conta));
     }
