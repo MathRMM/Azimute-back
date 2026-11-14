@@ -182,23 +182,23 @@ backend-azimute-core/
 - Saldo negativo nunca é bloqueado (RN11).
 
 **Testes (TDD):**
-- [ ] Unitário → base R$ 1.000 + crédito R$ 200 − débito R$ 50 → R$ 1.150
-- [ ] Unitário → corrente com limite R$ 1.000 e saldo −R$ 300 → R$ 300 em uso, R$ 700 disponível, `acimaDoLimite = false`
-- [ ] Unitário → corrente com limite R$ 1.000 e saldo −R$ 1.200 → R$ 1.000 em uso, R$ 0 disponível, `acimaDoLimite = true`
-- [ ] Unitário → corrente com saldo positivo → R$ 0 em uso, limite inteiro disponível
-- [ ] Unitário → poupança com saldo negativo → saldo negativo, sem campos de cheque especial
-- [ ] Unitário → limite informado em conta que não é corrente → 422 `LIMITE_SO_EM_CONTA_CORRENTE`
-- [ ] Integração → `POST` com saldo inicial R$ 2.300 → 201; o saldo é R$ 2.300 e existe uma conciliação com divergência zero (critério 1 do PRD)
-- [ ] Integração → `POST` com apelido repetido (outra caixa) → 409 `APELIDO_EM_USO`
-- [ ] Integração → `GET /api/contas` não traz inativas; com `incluirInativas=true`, traz
-- [ ] Integração → `PATCH` com `tipo` → 422; `PATCH` com `ativa=false` em conta com saldo → 200
-- [ ] Integração → conta inexistente → 404 `CONTA_NAO_ENCONTRADA`
-- [ ] Integração → sem token → 401 (SEC01)
-- [ ] Borda → `saldoInicial` com 3 casas decimais → 422; `saldoInicial` negativo → aceito
+- [x] Unitário → base R$ 1.000 + crédito R$ 200 − débito R$ 50 → R$ 1.150
+- [x] Unitário → corrente com limite R$ 1.000 e saldo −R$ 300 → R$ 300 em uso, R$ 700 disponível, `acimaDoLimite = false`
+- [x] Unitário → corrente com limite R$ 1.000 e saldo −R$ 1.200 → R$ 1.000 em uso, R$ 0 disponível, `acimaDoLimite = true`
+- [x] Unitário → corrente com saldo positivo → R$ 0 em uso, limite inteiro disponível
+- [x] Unitário → poupança com saldo negativo → saldo negativo, sem campos de cheque especial
+- [x] Unitário → limite informado em conta que não é corrente → 422 `LIMITE_SO_EM_CONTA_CORRENTE`
+- [x] Integração → `POST` com saldo inicial R$ 2.300 → 201; o saldo é R$ 2.300 e existe uma conciliação com divergência zero (critério 1 do PRD)
+- [x] Integração → `POST` com apelido repetido (outra caixa) → 409 `APELIDO_EM_USO`
+- [x] Integração → `GET /api/contas` não traz inativas; com `incluirInativas=true`, traz
+- [x] Integração → `PATCH` com `tipo` → 422; `PATCH` com `ativa=false` em conta com saldo → 200
+- [x] Integração → conta inexistente → 404 `CONTA_NAO_ENCONTRADA`
+- [x] Integração → sem token → 401 (SEC01)
+- [x] Borda → `saldoInicial` com 3 casas decimais → 422; `saldoInicial` negativo → aceito
 
 **Checklist de validação:**
-- [ ] RF01, RF03, RF04, RF05, RN06, RN09 (aplicação), RN11, SEC01, SEC02, P5, P8 atendidos
-- [ ] Testes das fases 1–2 passando
+- [x] RF01, RF03, RF04, RF05, RN06, RN09 (aplicação), RN11, SEC01, SEC02, P5, P8 atendidos
+- [x] Testes das fases 1–2 passando
 
 **Critério de avanço:** checklist completo → Fase 3.
 
@@ -492,7 +492,12 @@ sealed interface Movimentacao {
 }
 
 record Saldo(Dinheiro atual, LocalDate baseEm, Dinheiro baseValor, int movimentacoesDesdeABase,
-             Dinheiro chequeEspecialEmUso, Dinheiro limiteDisponivel, boolean acimaDoLimite) {}
+             ChequeEspecial chequeEspecial) {            // nulo fora de conta corrente
+    record ChequeEspecial(Dinheiro limite, Dinheiro emUso, Dinheiro disponivel, boolean acimaDoLimite) {}
+}
+// v1.3 (contrato original, substituído na Fase 2):
+// record Saldo(Dinheiro atual, LocalDate baseEm, Dinheiro baseValor, int movimentacoesDesdeABase,
+//              Dinheiro chequeEspecialEmUso, Dinheiro limiteDisponivel, boolean acimaDoLimite) {}
 ```
 
 ### 6.4 API
@@ -578,3 +583,4 @@ Todos: 401 sem token (SEC01). Valores monetários como string decimal.
 | 1.1 | 2026-11-14 | PRD v1.7: exclusão lógica e restauração de movimentação (RF13, RF15); colunas `created_at`, `updated_at` e `deleted_at` conforme a tabela da seção 1 (RN14); índices parciais só sobre movimentações vivas; decisões T8 e T9 |
 | 1.2 | 2026-11-14 | PRD v1.8: data futura aceita (RN15, pendência resolvida); nova **Fase 6**, com o padrão de datas nas tabelas da calculadora e do auth e exclusão lógica de simulação (RF40–RF43, `V005`). Status aprovado |
 | 1.3 | 2026-11-14 | Fase 1 concluída: `V004__contas.sql` e modelo (`Movimentacao` selada com `tipo()`, `sentidoPara()` e `efeitoNoSaldo()`). Red: compilação sem os tipos e `SchemaContasIT` com 15 falhas sem a migration; green: 321 testes, cobertura 98,8% de linhas e 97,9% de ramos. Testes extras além da lista: `ContaTest` (campos obrigatórios), checagem de `fatura_comp` no dia 1 e de apelido em branco. Makefile sem alvo novo nesta fase (os alvos de conta entram na Fase 5) |
+| 1.4 | 2026-11-14 | Fase 2 concluída. Desvios: (a) o cheque especial do `Saldo` virou um objeto aninhado `chequeEspecial { limite, emUso, disponivel, acimaDoLimite }`, nulo fora de conta corrente, em vez de três campos soltos (o JSON fica sem campos sem sentido em poupança e investimento); (b) os valores do `POST /api/contas` chegam como `BigDecimal` com `@Digits(fraction = 2)`, porque o `Dinheiro` arredondaria 3 casas em silêncio; (c) a resposta do saldo traz `ultimaConciliacao { data, saldoReal }`; (d) `GET /api/contas` lê o saldo conta a conta (consulta agregada fica para a Fase 5, como no risco da seção 7). Red: compilação sem as 12 classes da fase; green: 354 testes, cobertura 99,0% de linhas e 97,4% de ramos |
