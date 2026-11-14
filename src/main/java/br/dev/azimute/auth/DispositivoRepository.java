@@ -46,25 +46,25 @@ class DispositivoRepository {
 
     List<DispositivoRow> listarAtivos() {
         return jdbc.sql("""
-                        SELECT id, nome, criado_em, ultimo_uso FROM auth.dispositivos
-                        WHERE revogado_em IS NULL ORDER BY criado_em""")
+                        SELECT id, nome, created_at, ultimo_uso FROM auth.dispositivos
+                        WHERE revogado_em IS NULL ORDER BY created_at""")
                 .query((rs, n) -> new DispositivoRow(
                         new DispositivoId(rs.getObject("id", UUID.class)),
                         rs.getString("nome"),
-                        rs.getTimestamp("criado_em").toInstant(),
+                        rs.getTimestamp("created_at").toInstant(),
                         instante(rs.getTimestamp("ultimo_uso"))))
                 .list();
     }
 
     /** Idempotente: revogar o já revogado ou o inexistente não muda nada. */
     void revogar(DispositivoId id) {
-        jdbc.sql("UPDATE auth.dispositivos SET revogado_em = now() WHERE id = :id AND revogado_em IS NULL")
+        jdbc.sql("UPDATE auth.dispositivos SET revogado_em = now(), updated_at = now() WHERE id = :id AND revogado_em IS NULL")
                 .param("id", id.valor()).update();
     }
 
     /** Revoga todos os ativos, menos o informado (troca de senha, RF35). Devolve quantos foram revogados. */
     int revogarTodosExceto(DispositivoId mantido) {
-        return jdbc.sql("UPDATE auth.dispositivos SET revogado_em = now() WHERE id <> :id AND revogado_em IS NULL")
+        return jdbc.sql("UPDATE auth.dispositivos SET revogado_em = now(), updated_at = now() WHERE id <> :id AND revogado_em IS NULL")
                 .param("id", mantido.valor()).update();
     }
 

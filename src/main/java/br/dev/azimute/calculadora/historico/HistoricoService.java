@@ -1,7 +1,6 @@
 package br.dev.azimute.calculadora.historico;
 
 import br.dev.azimute.comum.Dinheiro;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -40,7 +39,9 @@ public class HistoricoService {
         if (repositorio.inserirSeAusente(id, dados)) {
             return repositorio.buscar(id).orElseThrow();
         }
-        var existente = repositorio.buscar(id).orElseThrow();
+        // O ID existe, mas a busca só enxerga as vivas: se não aparece, foi excluído e o reenvio não o
+        // ressuscita (RF41, mesma regra da T9 de contas). Para voltar, existe o restaurar.
+        var existente = repositorio.buscar(id).orElseThrow(() -> new SimulacaoExcluidaException(id));
         if (!existente.dados().mesmoConteudo(dados)) {
             throw new SimulacaoDivergenteException(id);
         }
@@ -59,20 +60,28 @@ public class HistoricoService {
     }
 
     /**
-     * Idempotente: excluir o que não existe não é erro (decisão T3). Proposta que é âncora de estimativas não
-     * pode ser excluída (D3).
+     * Exclusão lógica (RF41). Idempotente: excluir o que não existe ou já foi excluído não é erro (decisão T3).
+     * Proposta que é âncora de estimativas vivas não pode ser excluída (D3).
      */
     void excluir(SimulacaoId id) {
         var estimativas = repositorio.estimativasAncoradasEm(id);
         if (!estimativas.isEmpty()) {
             throw new SimulacaoEAncoraException(estimativas);
         }
-        try {
-            repositorio.excluir(id);
-        } catch (DataIntegrityViolationException e) {
-            // Uma estimativa foi gravada entre a verificação e a exclusão: a FK barrou.
-            throw new SimulacaoEAncoraException(repositorio.estimativasAncoradasEm(id));
+        if (!repositorio.excluir(id)) {
+            // Nada excluído: ou não havia o que excluir, ou uma estimativa foi gravada depois da verificação
+            // e o NOT EXISTS do UPDATE barrou.
+            var agora = repositorio.estimativasAncoradasEm(id);
+            if (!agora.isEmpty()) {
+                throw new SimulacaoEAncoraException(agora);
+            }
         }
+    }
+
+    /** Desfaz a exclusão lógica (RF41). Restaurar a que está viva não muda nada. */
+    SimulacaoSalva restaurar(SimulacaoId id) {
+        repositorio.restaurar(id);
+        return repositorio.buscar(id).orElseThrow(() -> new SimulacaoNaoEncontradaException(id));
     }
 
     /**

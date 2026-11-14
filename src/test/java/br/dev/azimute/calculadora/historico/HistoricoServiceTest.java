@@ -2,7 +2,6 @@ package br.dev.azimute.calculadora.historico;
 
 import br.dev.azimute.comum.Dinheiro;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -218,12 +217,57 @@ class HistoricoServiceTest {
 
     @Test
     void estimativa_gravada_entre_a_verificacao_e_a_exclusao_vira_conflito() {
+        // A exclusão lógica só acontece se não houver estimativa viva (NOT EXISTS no UPDATE): nada foi excluído.
         when(repositorio.estimativasAncoradasEm(id)).thenReturn(List.of(), List.of("est-nova"));
-        doThrow(new DataIntegrityViolationException("fk")).when(repositorio).excluir(id);
+        when(repositorio.excluir(id)).thenReturn(false);
 
         assertThatThrownBy(() -> servico.excluir(id))
                 .isInstanceOfSatisfying(SimulacaoEAncoraException.class,
                         e -> assertThat(e.detalhes()).containsEntry("estimativas", List.of("est-nova")));
+    }
+
+    @Test
+    void excluir_o_que_ja_foi_excluido_nao_e_erro() {
+        when(repositorio.estimativasAncoradasEm(id)).thenReturn(List.of());
+        when(repositorio.excluir(id)).thenReturn(false);
+
+        servico.excluir(id);
+
+        verify(repositorio).excluir(id);
+    }
+
+    // --- restaurar e reenvio de excluída (RF41) -----------------------------------------------------------------
+
+    @Test
+    void reenvio_de_simulacao_excluida_e_conflito_e_nao_a_ressuscita() {
+        when(repositorio.inserirSeAusente(any(), any())).thenReturn(false);
+        when(repositorio.buscar(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servico.salvar(id, proposta().montar()))
+                .isInstanceOfSatisfying(SimulacaoExcluidaException.class,
+                        e -> assertThat(e.codigo()).isEqualTo("SIMULACAO_EXCLUIDA"));
+    }
+
+    @Test
+    void restaurar_excluida_devolve_a_simulacao() {
+        var salva = proposta().salva(id);
+        when(repositorio.restaurar(id)).thenReturn(true);
+        when(repositorio.buscar(id)).thenReturn(Optional.of(salva));
+
+        assertThat(servico.restaurar(id)).isEqualTo(salva);
+    }
+
+    @Test
+    void restaurar_viva_nao_muda_nada_e_inexistente_e_404() {
+        var salva = proposta().salva(id);
+        when(repositorio.restaurar(id)).thenReturn(false);
+        when(repositorio.buscar(id)).thenReturn(Optional.of(salva));
+        assertThat(servico.restaurar(id)).isEqualTo(salva);
+
+        var outro = new SimulacaoId(java.util.UUID.randomUUID());
+        when(repositorio.restaurar(outro)).thenReturn(false);
+        when(repositorio.buscar(outro)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> servico.restaurar(outro)).isInstanceOf(SimulacaoNaoEncontradaException.class);
     }
 
     // --- comparar (RF22, D4) ----------------------------------------------------------------------------------
