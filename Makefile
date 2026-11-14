@@ -6,6 +6,7 @@
 GRADLE := ./gradlew
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha \
+        conta transferir conciliar consolidado \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -20,6 +21,12 @@ help:
 	@echo "    make dev            Sobe app + postgres no perfil dev (docker compose)"
 	@echo "    make dispositivo    Cadastra um dispositivo e mostra o token (uma vez)"
 	@echo "    make senha          Troca a senha; revoga os outros dispositivos (o do token continua)"
+	@echo ""
+	@echo "  Contas (pedem o token do dispositivo, sem eco)"
+	@echo "    make conta          Cadastra uma conta com o saldo de hoje"
+	@echo "    make transferir     Transfere entre duas contas (IDs de make consolidado)"
+	@echo "    make conciliar      Informa o saldo real de uma conta e mostra a divergência"
+	@echo "    make consolidado    Mostra a posição geral, o saldo em conta e cada conta"
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
 	@echo ""
@@ -94,6 +101,47 @@ senha:
 	curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:8080/api/auth/senha \
 	  -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
 	  -d "{\"senhaAtual\":\"$$ATUAL\",\"senhaNova\":\"$$NOVA\"}"
+
+API := http://localhost:8080/api/contas
+
+conta:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Apelido: " APELIDO; \
+	read -p "Instituição: " INSTITUICAO; \
+	read -p "Tipo (CORRENTE, POUPANCA, INVESTIMENTO, CARTEIRA, BENEFICIO): " TIPO; \
+	read -p "Função (GIRO, RESERVA): " FUNCAO; \
+	read -p "Saldo de hoje (ex.: 2300.00): " SALDO; \
+	read -p "Limite de cheque especial (só corrente, Enter para nenhum): " LIMITE; \
+	LIMITE_JSON=$$( [ -n "$$LIMITE" ] && echo ",\"limiteChequeEspecial\":\"$$LIMITE\"" ); \
+	curl -s -w "\nHTTP %{http_code}\n" -X POST $(API) -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"apelido\":\"$$APELIDO\",\"instituicao\":\"$$INSTITUICAO\",\"tipo\":\"$$TIPO\",\"funcao\":\"$$FUNCAO\",\"saldoInicial\":\"$$SALDO\"$$LIMITE_JSON}"
+
+transferir:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "ID da conta de origem: " ORIGEM; \
+	read -p "ID da conta de destino: " DESTINO; \
+	read -p "Valor (ex.: 1500.00): " VALOR; \
+	read -p "Data (AAAA-MM-DD): " DATA; \
+	read -p "Motivo (opcional): " MOTIVO; \
+	ID=$$(cat /proc/sys/kernel/random/uuid); \
+	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API)/movimentacoes/$$ID -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"tipo\":\"TRANSFERENCIA\",\"origem\":\"$$ORIGEM\",\"destino\":\"$$DESTINO\",\"valor\":\"$$VALOR\",\"data\":\"$$DATA\",\"motivo\":\"$$MOTIVO\"}"
+
+conciliar:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "ID da conta: " CONTA; \
+	read -p "Data do extrato (AAAA-MM-DD): " DATA; \
+	read -p "Saldo real no extrato: " SALDO; \
+	read -p "Justificativa (opcional): " JUSTIFICATIVA; \
+	curl -s -w "\nHTTP %{http_code}\n" -X POST $(API)/$$CONTA/conciliacoes -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"data\":\"$$DATA\",\"saldoReal\":\"$$SALDO\",\"justificativa\":\"$$JUSTIFICATIVA\"}"
+
+consolidado:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	curl -s -w "\nHTTP %{http_code}\n" $(API)/consolidado -H "Authorization: Bearer $$TOKEN"
 
 build:
 	$(GRADLE) build

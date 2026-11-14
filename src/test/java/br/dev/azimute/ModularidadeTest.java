@@ -1,5 +1,7 @@
 package br.dev.azimute;
 
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,20 @@ class ModularidadeTest {
                 .resideInAnyPackage("java..", "br.dev.azimute.comum..", "br.dev.azimute.calculadora.core..")
                 .because("o core é espelhado no app e extraível como biblioteca (regra 2 da doc 00)")
                 .check(classes);
+    }
+
+    @Test
+    void api_publica_de_contas_e_so_o_que_os_outros_modulos_usam() {
+        var classes = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("br.dev.azimute.contas");
+
+        // O resto de contas é interno (RF31): um tipo público novo precisa ser uma decisão, não um descuido.
+        assertThat(classes.stream()
+                .filter(c -> c.isTopLevelClass() && c.getModifiers().contains(JavaModifier.PUBLIC))
+                .map(JavaClass::getSimpleName))
+                .containsExactlyInAnyOrder("Conta", "ContaId", "TipoConta", "Funcao", "ContasFacade",
+                        "FontesDeDivida");
     }
 
     @Test

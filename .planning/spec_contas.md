@@ -302,23 +302,23 @@ backend-azimute-core/
 - Makefile: alvos `conta`, `transferir`, `conciliar` e `consolidado`, que leem o token sem eco, como `make senha`.
 
 **Testes (TDD):**
-- [ ] Unitário → contas de R$ 2.300, R$ 9.000 e −R$ 300 (corrente), sem dívidas → posição R$ 11.000; saldo em conta R$ 2.300
-- [ ] Unitário → mesma situação com uma fonte de dívida de R$ 12.000 → posição −R$ 1.000
-- [ ] Unitário → conta inativa fica fora das duas somas
-- [ ] Unitário → corrente negativa entra como zero no saldo em conta e negativa na posição geral, sem desconto duplo do cheque especial
-- [ ] Integração → transferência do Nubank para o CDB não muda a posição geral e reduz o saldo em conta (RN02)
-- [ ] Integração (fachada) → `registrarSaida` debita a conta; repetir com o mesmo `gastoId` não debita de novo
-- [ ] Integração (fachada) → `registrarEntrada` e `registrarPagamentoFatura` movem o saldo no sentido certo
-- [ ] Integração (fachada) → `contasDeReserva` devolve só `RESERVA` ativas
-- [ ] Integração (fachada) → registro em conta inativa → `CONTA_INATIVA`
-- [ ] Integração → `GET /api/contas/consolidado` sem token → 401
-- [ ] Modularidade → um módulo de teste não acessa as classes internas de `contas`
+- [x] Unitário → contas de R$ 2.300, R$ 9.000 e −R$ 300 (corrente), sem dívidas → posição R$ 11.000; saldo em conta R$ 2.300
+- [x] Unitário → mesma situação com uma fonte de dívida de R$ 12.000 → posição −R$ 1.000
+- [x] Unitário → conta inativa fica fora das duas somas
+- [x] Unitário → corrente negativa entra como zero no saldo em conta e negativa na posição geral, sem desconto duplo do cheque especial
+- [x] Integração → transferência do Nubank para o CDB não muda a posição geral e reduz o saldo em conta (RN02)
+- [x] Integração (fachada) → `registrarSaida` debita a conta; repetir com o mesmo `gastoId` não debita de novo
+- [x] Integração (fachada) → `registrarEntrada` e `registrarPagamentoFatura` movem o saldo no sentido certo
+- [x] Integração (fachada) → `contasDeReserva` devolve só `RESERVA` ativas
+- [x] Integração (fachada) → registro em conta inativa → `CONTA_INATIVA`
+- [x] Integração → `GET /api/contas/consolidado` sem token → 401
+- [x] Modularidade → um módulo de teste não acessa as classes internas de `contas`
 
 **Checklist de validação:**
-- [ ] RF06, RF30, RF31, RF32, RN01, RN03, RN12, RN13, P6 (ponto de ligação), P7 atendidos
-- [ ] Todos os critérios de aceitação do PRD (seção 10) marcados
-- [ ] Gate de cobertura de 90% em linhas e ramos passando (RNF05)
-- [ ] Testes das fases 1–5 passando
+- [x] RF06, RF30, RF31, RF32, RN01, RN03, RN12, RN13, P6 (ponto de ligação), P7 atendidos
+- [x] Todos os critérios de aceitação do PRD (seção 10) marcados
+- [x] Gate de cobertura de 90% em linhas e ramos passando (RNF05)
+- [x] Testes das fases 1–5 passando
 
 **Critério de avanço:** checklist completo → Fase 6.
 
@@ -587,3 +587,4 @@ Todos: 401 sem token (SEC01). Valores monetários como string decimal.
 | 1.4 | 2026-11-14 | Fase 2 concluída. Desvios: (a) o cheque especial do `Saldo` virou um objeto aninhado `chequeEspecial { limite, emUso, disponivel, acimaDoLimite }`, nulo fora de conta corrente, em vez de três campos soltos (o JSON fica sem campos sem sentido em poupança e investimento); (b) os valores do `POST /api/contas` chegam como `BigDecimal` com `@Digits(fraction = 2)`, porque o `Dinheiro` arredondaria 3 casas em silêncio; (c) a resposta do saldo traz `ultimaConciliacao { data, saldoReal }`; (d) `GET /api/contas` lê o saldo conta a conta (consulta agregada fica para a Fase 5, como no risco da seção 7). Red: compilação sem as 12 classes da fase; green: 354 testes, cobertura 99,0% de linhas e 97,4% de ramos |
 | 1.5 | 2026-11-14 | Fase 3 concluída. Decisão T10 (saldo antes da primeira conciliação é zero). Desvios de forma: os endpoints de movimentação ficaram num `MovimentacoesController` próprio, sob o mesmo `/api/contas`; o extrato devolve `{ conta, de, ate, saldoInicial, saldoFinal, linhas[{ id, tipo, data, valor, sentido, contraparte, motivo }], conciliacoes[{ data, saldoReal, saldoCalculado, divergencia, justificativa }] }`. Teste extra: `MovimentacaoRepositoryIT`, ida e volta no banco dos cinco tipos. Red: compilação sem as 16 classes e métodos da fase; green: 389 testes, cobertura 98,8% de linhas e 96,0% de ramos |
 | 1.6 | 2026-11-14 | Fase 4 concluída. Ordem das regras do `POST /conciliacoes`: conta existe (404) → reenvio idêntico da última devolve 200 (antes de qualquer outra regra, como no reenvio de movimentação) → conta ativa → data não futura → data posterior à última. Corrida entre dois envios do mesmo dia: a violação de `UNIQUE (conta_id, data)` cai na regra de reenvio. Endpoints num `ConciliacoesController` próprio. Red: compilação sem `ConciliacaoService` e as 2 exceções; green: 406 testes, cobertura 98,7% de linhas e 96,1% de ramos |
+| 1.7 | 2026-11-14 | Fase 5 concluída. Desvios: (a) a inserção de movimentação usa `ON CONFLICT DO NOTHING` sem alvo, que cobre a chave primária e os índices únicos parciais por referência (T5) com a mesma consulta; (b) a fachada reaproveita a checagem de conta ativa do `MovimentacaoService` (`registrarDeOutroModulo`); (c) `ConsolidadoService` recebe as fontes de dívida por `ObjectProvider`, para subir sem nenhuma implementação; (d) o teste de fronteira ficou no `ModularidadeTest`, fixando os seis tipos públicos do módulo. Critérios de aceitação do PRD marcados, exceto os dois da Fase 6. Red: compilação sem `ConsolidadoService`, `ContasFacade` e `FontesDeDivida`; green: 422 testes, cobertura 99,0% de linhas e 96,9% de ramos |
