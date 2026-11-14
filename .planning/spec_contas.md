@@ -349,21 +349,21 @@ backend-azimute-core/
 - A API não muda: `sincronizadaEm` e `criadoEm` continuam com o mesmo nome no JSON (RF40, RF43).
 
 **Testes (TDD):**
-- [ ] Integração → excluir simulação → some do `GET` e da comparação, mas a linha continua no banco com `deleted_at`
-- [ ] Integração → restaurar → volta ao `GET` e à comparação
-- [ ] Integração → excluir âncora com estimativa viva → 409 `SIMULACAO_E_ANCORA`; com a estimativa já excluída → 204
-- [ ] Integração → estimativa nova com âncora excluída → 422 `ANCORA_INVALIDA`
-- [ ] Integração → `PUT` com ID excluído → 409 `SIMULACAO_EXCLUIDA`
-- [ ] Banco → `UPDATE` de `deleted_at` numa simulação → permitido pelo trigger de valores
-- [ ] Integração → `PATCH` de anotação muda `updated_at` e não `created_at`
-- [ ] Integração → troca de senha e revogação atualizam `updated_at`; uso do token não
-- [ ] Contrato → `sincronizadaEm` e `criadoEm` continuam no JSON com os mesmos valores
-- [ ] Regressão → toda a suíte das fases anteriores (calculadora e auth) passa sem mudar o comportamento, exceto a exclusão de simulação
+- [x] Integração → excluir simulação → some do `GET` e da comparação, mas a linha continua no banco com `deleted_at`
+- [x] Integração → restaurar → volta ao `GET` e à comparação
+- [x] Integração → excluir âncora com estimativa viva → 409 `SIMULACAO_E_ANCORA`; com a estimativa já excluída → 204
+- [x] Integração → estimativa nova com âncora excluída → 422 `ANCORA_INVALIDA`
+- [x] Integração → `PUT` com ID excluído → 409 `SIMULACAO_EXCLUIDA`
+- [x] Banco → `UPDATE` de `deleted_at` numa simulação → permitido pelo trigger de valores
+- [x] Integração → `PATCH` de anotação muda `updated_at` e não `created_at`
+- [x] Integração → troca de senha e revogação atualizam `updated_at`; uso do token não
+- [x] Contrato → `sincronizadaEm` e `criadoEm` continuam no JSON com os mesmos valores
+- [x] Regressão → toda a suíte das fases anteriores (calculadora e auth) passa sem mudar o comportamento, exceto a exclusão de simulação
 
 **Checklist de validação:**
-- [ ] RF40–RF43, RN14 atendidos
-- [ ] Gate de cobertura de 90% em linhas e ramos passando (RNF05)
-- [ ] Testes das fases 1–6 passando
+- [x] RF40–RF43, RN14 atendidos
+- [x] Gate de cobertura de 90% em linhas e ramos passando (RNF05)
+- [x] Testes das fases 1–6 passando
 
 **Critério de avanço:** checklist completo → módulo pronto para validação local.
 
@@ -588,3 +588,4 @@ Todos: 401 sem token (SEC01). Valores monetários como string decimal.
 | 1.5 | 2026-11-14 | Fase 3 concluída. Decisão T10 (saldo antes da primeira conciliação é zero). Desvios de forma: os endpoints de movimentação ficaram num `MovimentacoesController` próprio, sob o mesmo `/api/contas`; o extrato devolve `{ conta, de, ate, saldoInicial, saldoFinal, linhas[{ id, tipo, data, valor, sentido, contraparte, motivo }], conciliacoes[{ data, saldoReal, saldoCalculado, divergencia, justificativa }] }`. Teste extra: `MovimentacaoRepositoryIT`, ida e volta no banco dos cinco tipos. Red: compilação sem as 16 classes e métodos da fase; green: 389 testes, cobertura 98,8% de linhas e 96,0% de ramos |
 | 1.6 | 2026-11-14 | Fase 4 concluída. Ordem das regras do `POST /conciliacoes`: conta existe (404) → reenvio idêntico da última devolve 200 (antes de qualquer outra regra, como no reenvio de movimentação) → conta ativa → data não futura → data posterior à última. Corrida entre dois envios do mesmo dia: a violação de `UNIQUE (conta_id, data)` cai na regra de reenvio. Endpoints num `ConciliacoesController` próprio. Red: compilação sem `ConciliacaoService` e as 2 exceções; green: 406 testes, cobertura 98,7% de linhas e 96,1% de ramos |
 | 1.7 | 2026-11-14 | Fase 5 concluída. Desvios: (a) a inserção de movimentação usa `ON CONFLICT DO NOTHING` sem alvo, que cobre a chave primária e os índices únicos parciais por referência (T5) com a mesma consulta; (b) a fachada reaproveita a checagem de conta ativa do `MovimentacaoService` (`registrarDeOutroModulo`); (c) `ConsolidadoService` recebe as fontes de dívida por `ObjectProvider`, para subir sem nenhuma implementação; (d) o teste de fronteira ficou no `ModularidadeTest`, fixando os seis tipos públicos do módulo. Critérios de aceitação do PRD marcados, exceto os dois da Fase 6. Red: compilação sem `ConsolidadoService`, `ContasFacade` e `FontesDeDivida`; green: 422 testes, cobertura 99,0% de linhas e 96,9% de ramos |
+| 1.8 | 2026-11-14 | Fase 6 concluída; todas as fases do SPEC implementadas. Desvios: (a) a proteção da âncora passou da FK do `DELETE` para um `NOT EXISTS` no `UPDATE` da exclusão lógica, com o mesmo efeito na corrida; (b) `buscar` da simulação só enxerga as vivas, então o `PUT` de um ID excluído vira 409 `SIMULACAO_EXCLUIDA` sem consulta extra; (c) os testes do auth ficaram em `DatasDeControleIT` e os do histórico em `HistoricoExclusaoIT`; (d) restaurar uma estimativa cuja âncora está excluída é permitido (não estava no PRD; fica como ponto para revisão). Red: compilação sem `restaurar` e com `excluir` sem retorno; green: 440 testes, cobertura 99,0% de linhas e 96,9% de ramos |

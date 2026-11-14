@@ -128,11 +128,11 @@ class LimiteDeTentativasIT {
         cadastrar("10.0.4.2", "admin", ERRADA).andExpect(status().isUnauthorized());
         cadastrar("10.0.4.3", "fulano", SENHA).andExpect(status().isUnauthorized());
 
-        var linhas = jdbc.sql("SELECT host(ip) AS ip, sucesso, em FROM auth.tentativas_login ORDER BY id")
+        var linhas = jdbc.sql("SELECT host(ip) AS ip, sucesso, created_at FROM auth.tentativas_login ORDER BY id")
                 .query().listOfRows();
         assertThat(linhas).extracting(l -> l.get("ip")).containsExactly("10.0.4.1", "10.0.4.2", "10.0.4.3");
         assertThat(linhas).extracting(l -> l.get("sucesso")).containsExactly(true, false, false);
-        assertThat(linhas).extracting(l -> ((java.sql.Timestamp) l.get("em")).toInstant()).containsOnly(T0);
+        assertThat(linhas).extracting(l -> ((java.sql.Timestamp) l.get("created_at")).toInstant()).containsOnly(T0);
     }
 
     /** RN18: sem o hash fictício, login inexistente responde em ~1 ms e senha errada em ~250 ms (BCrypt 12). */

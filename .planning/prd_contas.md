@@ -195,8 +195,8 @@ Valem os da fundação (Java 25, Spring Boot 4.1, Spring Modulith, PostgreSQL 18
 - [x] Nenhum outro módulo acessa a parte interna de `contas` (RF31, teste do Spring Modulith)
 - [x] Todos os endpoints exigem token (SEC01)
 - [x] Transferência com data futura é aceita e conta no saldo atual (RN15)
-- [ ] Simulação excluída some da listagem e da comparação, continua no banco e volta ao ser restaurada; âncora com estimativas vivas continua protegida (RF40, RF41)
-- [ ] Tabelas de `auth` usam `created_at` e `updated_at`, sem mudar a API; revogação de dispositivo continua definitiva (RF42, RF43)
+- [x] Simulação excluída some da listagem e da comparação, continua no banco e volta ao ser restaurada; âncora com estimativas vivas continua protegida (RF40, RF41)
+- [x] Tabelas de `auth` usam `created_at` e `updated_at`, sem mudar a API; revogação de dispositivo continua definitiva (RF42, RF43)
 - [x] Gate de cobertura de 90% em linhas e ramos continua passando (RNF05)
 
 ## 11. Decisões sobre as pendências
