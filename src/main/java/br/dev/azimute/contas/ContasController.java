@@ -29,10 +29,23 @@ class ContasController {
     private static final Set<String> CAMPOS_EDITAVEIS =
             Set.of("apelido", "instituicao", "funcao", "limiteChequeEspecial", "ativa");
 
-    private final ContaService contas;
+    /** Visão central (RF06): os valores globais e o saldo de cada conta que os compõe. */
+    record ConsolidadoResponse(Dinheiro posicaoGeral, Dinheiro dividas, Dinheiro saldoEmConta,
+                               List<ContaResponse> contas) {}
 
-    ContasController(ContaService contas) {
+    private final ContaService contas;
+    private final ConsolidadoService consolidado;
+
+    ContasController(ContaService contas, ConsolidadoService consolidado) {
         this.contas = contas;
+        this.consolidado = consolidado;
+    }
+
+    @GetMapping("/consolidado")
+    ConsolidadoResponse consolidado() {
+        var c = consolidado.consolidado();
+        return new ConsolidadoResponse(c.posicaoGeral(), c.dividas(), c.saldoEmConta(),
+                c.contas().stream().map(ContaResponse::de).toList());
     }
 
     @PostMapping

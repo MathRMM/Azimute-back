@@ -52,8 +52,10 @@ class MovimentacaoRepository {
     }
 
     /**
-     * Grava com o ID do cliente. {@code false} quando o ID já existe (viva ou excluída): quem decide o que fazer
-     * é o serviço (P1). {@code ON CONFLICT DO NOTHING} resolve a corrida entre dois envios simultâneos.
+     * Grava com o ID do cliente. {@code false} quando o ID já existe (viva ou excluída) ou, na fachada, quando a
+     * mesma referência de ganho, gasto ou fatura já está viva (T5): quem decide o que fazer é o serviço (P1).
+     * {@code ON CONFLICT DO NOTHING} sem alvo cobre a chave primária e os índices únicos parciais, e resolve a
+     * corrida entre dois envios simultâneos.
      */
     boolean inserirSeAusente(Movimentacao m) {
         var campos = Campos.de(m);
@@ -61,7 +63,7 @@ class MovimentacaoRepository {
                         INSERT INTO contas.movimentacoes (id, tipo, conta_origem, conta_destino, valor, data,
                                                           ganho_id, gasto_id, cartao_id, fatura_comp, motivo)
                         VALUES (:id, :tipo, :origem, :destino, :valor, :data, :ganho, :gasto, :cartao, :fatura, :motivo)
-                        ON CONFLICT (id) DO NOTHING""")
+                        ON CONFLICT DO NOTHING""")
                 .param("id", m.id().valor()).param("tipo", m.tipo())
                 .param("origem", campos.origem()).param("destino", campos.destino())
                 .param("valor", m.valor().valor()).param("data", m.data())

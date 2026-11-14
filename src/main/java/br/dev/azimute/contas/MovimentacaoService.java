@@ -48,6 +48,15 @@ class MovimentacaoService {
         return conferirReenvio(movimentacoes.buscar(id).orElseThrow(), movimentacao);
     }
 
+    /**
+     * Entrada, saída ou pagamento de fatura vindos da fachada (RF30). Repetir a mesma referência (ganho, gasto ou
+     * cartão + fatura) não lança de novo: o índice único parcial barra e a inserção vira nada (T5).
+     */
+    void registrarDeOutroModulo(Movimentacao movimentacao) {
+        exigirContasAtivas(movimentacao);
+        movimentacoes.inserirSeAusente(movimentacao);
+    }
+
     /** Exclusão lógica (RF13). Excluir o que não existe ou já foi excluído não é erro (T3). */
     void excluir(MovimentacaoId id) {
         var registro = movimentacoes.buscar(id);
