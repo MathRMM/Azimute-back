@@ -46,6 +46,14 @@ class ConciliacaoRepository {
                 .optional();
     }
 
+    /** Todas as conciliações da conta, da mais recente para a mais antiga (RF21). */
+    List<Conciliacao> historico(ContaId conta) {
+        return jdbc.sql("SELECT " + COLUNAS + " FROM contas.conciliacoes WHERE conta_id = :conta ORDER BY data DESC")
+                .param("conta", conta.valor())
+                .query(ConciliacaoRepository::mapear)
+                .list();
+    }
+
     /** A base do saldo numa data: a conciliação mais recente com data igual ou anterior a {@code data}. */
     Optional<Conciliacao> ultimaAte(ContaId conta, LocalDate data) {
         return jdbc.sql("SELECT " + COLUNAS + " FROM contas.conciliacoes WHERE conta_id = :conta "
