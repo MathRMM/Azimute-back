@@ -146,22 +146,22 @@ backend-azimute-core/
 - Records e enums do modelo (RF02, RF14, RNF02). `Movimentacao` expõe, para uma conta, se é crédito, débito ou não a envolve. Transferência é débito na origem e crédito no destino (RN02).
 
 **Testes (TDD):**
-- [ ] Banco → transferência com origem igual ao destino → violação de `direcao_coerente`
-- [ ] Banco → `SAIDA` com conta de destino → violação de `direcao_coerente`
-- [ ] Banco → `ENTRADA` sem destino → violação
-- [ ] Banco → `valor = 0` e `valor < 0` → violação
-- [ ] Banco → `UPDATE` e `DELETE` em `contas.conciliacoes` → exceção do trigger
-- [ ] Banco → dois apelidos `"Nubank"` e `" nubank "` → violação do índice único
-- [ ] Banco → limite de cheque especial em conta `POUPANCA` → violação; em `CORRENTE` → aceito
-- [ ] Banco → duas saídas vivas com o mesmo `gasto_id` → violação do índice único parcial; com a primeira excluída (`deleted_at` preenchido) → aceita
-- [ ] Banco → `created_at` e `updated_at` preenchidos na inserção; `deleted_at` nulo (RN14)
-- [ ] Modelo → transferência é débito na origem, crédito no destino e não envolve uma terceira conta
-- [ ] Modelo → entrada e rendimento são crédito; saída e pagamento de fatura são débito
-- [ ] Modularidade → `ModularidadeTest` continua passando
+- [x] Banco → transferência com origem igual ao destino → violação de `direcao_coerente`
+- [x] Banco → `SAIDA` com conta de destino → violação de `direcao_coerente`
+- [x] Banco → `ENTRADA` sem destino → violação
+- [x] Banco → `valor = 0` e `valor < 0` → violação
+- [x] Banco → `UPDATE` e `DELETE` em `contas.conciliacoes` → exceção do trigger
+- [x] Banco → dois apelidos `"Nubank"` e `" nubank "` → violação do índice único
+- [x] Banco → limite de cheque especial em conta `POUPANCA` → violação; em `CORRENTE` → aceito
+- [x] Banco → duas saídas vivas com o mesmo `gasto_id` → violação do índice único parcial; com a primeira excluída (`deleted_at` preenchido) → aceita
+- [x] Banco → `created_at` e `updated_at` preenchidos na inserção; `deleted_at` nulo (RN14)
+- [x] Modelo → transferência é débito na origem, crédito no destino e não envolve uma terceira conta
+- [x] Modelo → entrada e rendimento são crédito; saída e pagamento de fatura são débito
+- [x] Modularidade → `ModularidadeTest` continua passando
 
 **Checklist de validação:**
-- [ ] RF02, RF14, RN04, RN05, RN07 (parte do banco), RN09 (banco), RN14, RNF01, RNF02 atendidos
-- [ ] Testes das fases anteriores passando
+- [x] RF02, RF14, RN04, RN05, RN07 (parte do banco), RN09 (banco), RN14, RNF01, RNF02 atendidos
+- [x] Testes das fases anteriores passando
 
 **Critério de avanço:** checklist completo → Fase 2.
 
@@ -577,3 +577,4 @@ Todos: 401 sem token (SEC01). Valores monetários como string decimal.
 | 1.0 | 2026-11-14 | Criação inicial: 5 fases aprovadas; decisões técnicas T1–T7; uma pendência (data futura de movimentação) |
 | 1.1 | 2026-11-14 | PRD v1.7: exclusão lógica e restauração de movimentação (RF13, RF15); colunas `created_at`, `updated_at` e `deleted_at` conforme a tabela da seção 1 (RN14); índices parciais só sobre movimentações vivas; decisões T8 e T9 |
 | 1.2 | 2026-11-14 | PRD v1.8: data futura aceita (RN15, pendência resolvida); nova **Fase 6**, com o padrão de datas nas tabelas da calculadora e do auth e exclusão lógica de simulação (RF40–RF43, `V005`). Status aprovado |
+| 1.3 | 2026-11-14 | Fase 1 concluída: `V004__contas.sql` e modelo (`Movimentacao` selada com `tipo()`, `sentidoPara()` e `efeitoNoSaldo()`). Red: compilação sem os tipos e `SchemaContasIT` com 15 falhas sem a migration; green: 321 testes, cobertura 98,8% de linhas e 97,9% de ramos. Testes extras além da lista: `ContaTest` (campos obrigatórios), checagem de `fatura_comp` no dia 1 e de apelido em branco. Makefile sem alvo novo nesta fase (os alvos de conta entram na Fase 5) |
