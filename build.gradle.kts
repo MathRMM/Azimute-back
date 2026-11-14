@@ -1,5 +1,6 @@
 plugins {
     java
+    jacoco
     id("org.springframework.boot") version "4.1.2"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -62,4 +63,39 @@ tasks.withType<Test> {
         includeEngines("junit-jupiter", "jqwik")
     }
     systemProperty("user.timezone", "America/Sao_Paulo")
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+// Só o ponto de entrada fica fora: é um main de três linhas que nenhum teste chama.
+val classesMedidas = sourceSets.main.get().output.classesDirs.asFileTree.matching {
+    exclude("br/dev/azimute/AzimuteApplication*")
+}
+
+tasks.jacocoTestReport {
+    classDirectories.setFrom(classesMedidas)
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// Unitários + integração juntos; abaixo de 90% de linhas ou de ramos, o build falha.
+tasks.jacocoTestCoverageVerification {
+    classDirectories.setFrom(classesMedidas)
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                minimum = "0.90".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                minimum = "0.90".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }

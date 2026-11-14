@@ -5,7 +5,7 @@
 
 GRADLE := ./gradlew
 
-.PHONY: help setup dev start stop test test-watch test-unit dispositivo senha \
+.PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -24,8 +24,10 @@ help:
 	@echo "    make stop           Para os containers"
 	@echo ""
 	@echo "  Testes"
-	@echo "    make test           Executa todos os testes (unitários + integração com Testcontainers)"
+	@echo "    make test           Executa todos os testes e exige 90% de linhas e de ramos (JaCoCo)"
 	@echo "    make test-unit      Executa só os testes sem banco (*Test)"
+	@echo "    make test-integracao Executa só os testes com Postgres via Testcontainers (*IT)"
+	@echo "    make coverage       Mostra onde fica o relatório de cobertura da última execução"
 	@echo "    make test-watch     Reexecuta os testes a cada mudança"
 	@echo ""
 	@echo "  Banco de dados"
@@ -58,10 +60,16 @@ stop:
 	docker compose down
 
 test:
-	$(GRADLE) test
+	$(GRADLE) test jacocoTestCoverageVerification
 
 test-unit:
 	$(GRADLE) test --tests '*Test'
+
+test-integracao:
+	$(GRADLE) test --tests '*IT'
+
+coverage:
+	@echo "Relatório: build/reports/jacoco/test/html/index.html (gerado a cada make test)"
 
 test-watch:
 	$(GRADLE) test --continuous
