@@ -413,21 +413,21 @@ backend-azimute-core/
 - `POST /api/auth/senha` (RF35, RN15): exige `senhaAtual` correta (errada → 401 `CREDENCIAIS_INVALIDAS`); `senhaNova` com 12 caracteres ou mais (senão 422 `SENHA_CURTA`); grava o novo hash e revoga todos os dispositivos, **exceto** o da requisição, numa única transação.
 
 **Testes (TDD):**
-- [ ] Limite por IP → 5 falhas do IP A → a 6ª tentativa, mesmo com a senha certa, → 429; o IP B continua podendo tentar
-- [ ] Limite por IP → falhas com mais de 15 minutos não contam (horário controlado por um `Clock` injetado)
-- [ ] Limite global → 20 falhas de IPs variados → cadastro bloqueado para todos → 429; um token já emitido continua → 200
-- [ ] Tentativa bloqueada não gera linha em `tentativas_login`
-- [ ] Toda tentativa não bloqueada gera uma linha com IP e resultado
-- [ ] Tempo → a mediana do tempo de resposta para login inexistente e para senha errada difere menos de 30% (teste com amostragem, tolerante a ruído)
-- [ ] Troca de senha → sem `senhaAtual` ou com a atual errada → falha, e nada muda
-- [ ] Troca de senha → nova com 11 caracteres → 422 `SENHA_CURTA`
-- [ ] Troca de senha → sucesso → o dispositivo atual continua → 200; os outros → 401; a senha antiga deixa de cadastrar dispositivos
-- [ ] Log → o conteúdo capturado do log não contém a senha nem o token
+- [x] Limite por IP → 5 falhas do IP A → a 6ª tentativa, mesmo com a senha certa, → 429; o IP B continua podendo tentar
+- [x] Limite por IP → falhas com mais de 15 minutos não contam (horário controlado por um `Clock` injetado)
+- [x] Limite global → 20 falhas de IPs variados → cadastro bloqueado para todos → 429; um token já emitido continua → 200
+- [x] Tentativa bloqueada não gera linha em `tentativas_login`
+- [x] Toda tentativa não bloqueada gera uma linha com IP e resultado
+- [x] Tempo → a mediana do tempo de resposta para login inexistente e para senha errada difere menos de 30% (teste com amostragem, tolerante a ruído)
+- [x] Troca de senha → sem `senhaAtual` ou com a atual errada → falha, e nada muda
+- [x] Troca de senha → nova com 11 caracteres → 422 `SENHA_CURTA`
+- [x] Troca de senha → sucesso → o dispositivo atual continua → 200; os outros → 401; a senha antiga deixa de cadastrar dispositivos
+- [x] Log → o conteúdo capturado do log não contém a senha nem o token
 
 **Checklist de validação:**
-- [ ] RF35, RF37, RN15–RN18, SEC07, SEC08 atendidos
-- [ ] Todos os critérios de aceitação do PRD (seção 10) marcados
-- [ ] Testes das fases 1–8 passando
+- [x] RF35, RF37, RN15–RN18, SEC07, SEC08 atendidos
+- [x] Todos os critérios de aceitação do PRD (seção 10) marcados
+- [x] Testes das fases 1–8 passando
 
 **Critério de avanço:** fim deste SPEC. Próximo passo: PRD de implantação (VPS, Caddy, backup) ou PRD do módulo `contas` (fase 3 do roadmap).
 
@@ -679,3 +679,4 @@ Códigos de erro: `CREDENCIAIS_INVALIDAS` (401), `NAO_AUTENTICADO` (401), `LOGIN
 | 1.5 | 2026-11-07 | Fase 5 concluída. Desvios: (a) **tolerância de R$ 0,01 na parcela da estimativa** em vez de exata (D6): o app calcula com a taxa da âncora em precisão total e o servidor só tem 8 casas, e uma rejeição indevida travaria a fila offline, que não descarta itens; (b) inserção com `INSERT … ON CONFLICT (id) DO NOTHING` via `JdbcClient` em vez de `JdbcAggregateTemplate.insert` + captura de PK (sem transação abortada na corrida); (c) o trigger também protege `valor_financiado` e `taxa_anual`, que são snapshot; (d) proposta com `ancoraId` → `ANCORA_INVALIDA`; âncora de estimativa precisa ser `PROPOSTA`; (e) DTOs e erros no pacote `historico`, sem subpacotes `dto/` e `erros/` (tudo package-private) |
 | 1.6 | 2026-11-07 | Fase 6 concluída. Detalhes: `PATCH` lê o corpo como mapa (campo ausente não muda; `observacao: null` ou em branco apaga); `status: null` → 422; a resposta da comparação também traz `local`, `origem`, `status` e `parcela` de cada item; `DELETE` captura a violação de FK de uma estimativa gravada no meio da exclusão e responde 409; `economiaEntreMelhorEPior` pode ser **negativa** quando a proposta de menor taxa tem prazo maior (juros totais maiores), o que é coerente com a D4 |
 | 1.7 | 2026-11-07 | Fase 7 concluída. Desvios: (a) o seed lê a propriedade `app.senha-inicial`, preenchida por `APP_SENHA_INICIAL` (variável de ambiente não é configurável em teste; para o usuário, nada muda); (b) **`/actuator/health` fica fora da exigência de HTTPS**, porque o healthcheck interno chama por HTTP e a rota só responde "UP"; (c) `HttpsObrigatorioFilter` e `TokenFilter` não são beans (só existem dentro da cadeia de segurança, sem registro duplicado como filtro de servlet); (d) 401 traz `WWW-Authenticate: Bearer`; 403 de autorização sai como `ACESSO_NEGADO`; (e) datas da listagem de dispositivos no fuso de São Paulo, como no histórico; (f) alvo `make dispositivo`; (g) nos testes, `ClienteDeTeste` grava um dispositivo direto no banco e usa HTTPS, e `src/test/resources/config/application.yml` define a senha inicial dos testes. Validado de ponta a ponta com Docker Compose |
+| 1.8 | 2026-11-14 | Fase 8 concluída; fim deste SPEC. Desvios e detalhes: (a) **bean `Clock relogio()` no `SecurityConfig`**, arquivo fora da lista da fase, para o limite usar um relógio injetado (os testes trocam por `RelogioAjustavel`, `@Primary`); (b) `detalhes.liberaEm` = horário da 5ª falha mais recente do IP + 15 min, no fuso de São Paulo (ISO-8601 com offset); `LOGIN_BLOQUEADO_GLOBAL` não traz detalhes; (c) o hash fictício do RN18 é gerado no construtor do `DispositivoService` a partir de um UUID aleatório, com o mesmo custo do encoder; (d) `cadastrar` usa `@Transactional(noRollbackFor = CredenciaisInvalidasException.class)`, para a linha da falha não ser desfeita junto com a exceção; (e) `senhaAtual` ausente ou em branco → 422 de validação, `senhaAtual` errada → 401 `CREDENCIAIS_INVALIDAS`; troca bem-sucedida → 204, e `SENHA_CURTA` traz `detalhes.minimo`; (f) `UsuarioRepository` ganhou `buscarUnico()` e `atualizarSenha()`, e `DispositivoRepository` ganhou `revogarTodosExceto()`; (g) red refeito com Docker: as 10 falhas foram de asserção (200 em vez de 429, 404 em `/api/auth/senha`, medianas de 2 ms contra 191 ms). (h) alvo `make senha`. Suíte completa: 217 testes, 0 falhas. Critérios de aceitação do PRD (seção 10) marcados |

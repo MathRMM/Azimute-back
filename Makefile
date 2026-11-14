@@ -5,7 +5,7 @@
 
 GRADLE := ./gradlew
 
-.PHONY: help setup dev start stop test test-watch test-unit dispositivo \
+.PHONY: help setup dev start stop test test-watch test-unit dispositivo senha \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -19,6 +19,7 @@ help:
 	@echo "  Desenvolvimento"
 	@echo "    make dev            Sobe app + postgres no perfil dev (docker compose)"
 	@echo "    make dispositivo    Cadastra um dispositivo e mostra o token (uma vez)"
+	@echo "    make senha          Troca a senha; revoga os outros dispositivos (o do token continua)"
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
 	@echo ""
@@ -77,6 +78,14 @@ dispositivo:
 	read -p "Nome do dispositivo: " NOME; \
 	curl -s -X POST http://localhost:8080/api/auth/dispositivos -H 'Content-Type: application/json' \
 	  -d "{\"login\":\"admin\",\"senha\":\"$$SENHA\",\"nomeDispositivo\":\"$$NOME\"}"; echo
+
+senha:
+	@read -p "Token do dispositivo que continua ativo: " -s TOKEN; echo; \
+	read -p "Senha atual: " -s ATUAL; echo; \
+	read -p "Senha nova (mín. 12 caracteres): " -s NOVA; echo; \
+	curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:8080/api/auth/senha \
+	  -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+	  -d "{\"senhaAtual\":\"$$ATUAL\",\"senhaNova\":\"$$NOVA\"}"
 
 build:
 	$(GRADLE) build

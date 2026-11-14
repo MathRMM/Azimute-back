@@ -62,6 +62,12 @@ class DispositivoRepository {
                 .param("id", id.valor()).update();
     }
 
+    /** Revoga todos os ativos, menos o informado (troca de senha, RF35). Devolve quantos foram revogados. */
+    int revogarTodosExceto(DispositivoId mantido) {
+        return jdbc.sql("UPDATE auth.dispositivos SET revogado_em = now() WHERE id <> :id AND revogado_em IS NULL")
+                .param("id", mantido.valor()).update();
+    }
+
     private static Instant instante(Timestamp t) {
         return t == null ? null : t.toInstant();
     }
