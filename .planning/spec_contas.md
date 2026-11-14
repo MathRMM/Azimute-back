@@ -268,18 +268,18 @@ backend-azimute-core/
 - A divergência gravada nunca é recalculada (RN07). Não há endpoint de alteração ou exclusão de conciliação.
 
 **Testes (TDD):**
-- [ ] Unitário → calculado R$ 800 e real R$ 770 → divergência −R$ 30
-- [ ] Unitário → data igual à da última → `CONCILIACAO_FORA_DE_ORDEM`; mesmo corpo da última → devolve a existente
-- [ ] Integração → depois de conciliar com R$ 770, o saldo atual parte de R$ 770 (critério 7)
-- [ ] Integração → excluir (ou restaurar) uma movimentação anterior à conciliação → a divergência registrada não muda (critério 8)
-- [ ] Integração → lançar movimentação retroativa → a divergência registrada não muda (critério 8)
-- [ ] Integração → histórico em ordem decrescente de data, incluindo a conciliação inicial
-- [ ] Integração → `UPDATE` direto no SQL → exceção do trigger (critério 9; reforça a Fase 1)
-- [ ] Borda → data futura → 422; conta inativa → 422
+- [x] Unitário → calculado R$ 800 e real R$ 770 → divergência −R$ 30
+- [x] Unitário → data igual à da última → `CONCILIACAO_FORA_DE_ORDEM`; mesmo corpo da última → devolve a existente
+- [x] Integração → depois de conciliar com R$ 770, o saldo atual parte de R$ 770 (critério 7)
+- [x] Integração → excluir (ou restaurar) uma movimentação anterior à conciliação → a divergência registrada não muda (critério 8)
+- [x] Integração → lançar movimentação retroativa → a divergência registrada não muda (critério 8)
+- [x] Integração → histórico em ordem decrescente de data, incluindo a conciliação inicial
+- [x] Integração → `UPDATE` direto no SQL → exceção do trigger (critério 9; reforça a Fase 1)
+- [x] Borda → data futura → 422; conta inativa → 422
 
 **Checklist de validação:**
-- [ ] RF20, RF21, RN06, RN07, RN08, P3 atendidos
-- [ ] Testes das fases 1–4 passando
+- [x] RF20, RF21, RN06, RN07, RN08, P3 atendidos
+- [x] Testes das fases 1–4 passando
 
 **Critério de avanço:** checklist completo → Fase 5.
 
@@ -586,3 +586,4 @@ Todos: 401 sem token (SEC01). Valores monetários como string decimal.
 | 1.3 | 2026-11-14 | Fase 1 concluída: `V004__contas.sql` e modelo (`Movimentacao` selada com `tipo()`, `sentidoPara()` e `efeitoNoSaldo()`). Red: compilação sem os tipos e `SchemaContasIT` com 15 falhas sem a migration; green: 321 testes, cobertura 98,8% de linhas e 97,9% de ramos. Testes extras além da lista: `ContaTest` (campos obrigatórios), checagem de `fatura_comp` no dia 1 e de apelido em branco. Makefile sem alvo novo nesta fase (os alvos de conta entram na Fase 5) |
 | 1.4 | 2026-11-14 | Fase 2 concluída. Desvios: (a) o cheque especial do `Saldo` virou um objeto aninhado `chequeEspecial { limite, emUso, disponivel, acimaDoLimite }`, nulo fora de conta corrente, em vez de três campos soltos (o JSON fica sem campos sem sentido em poupança e investimento); (b) os valores do `POST /api/contas` chegam como `BigDecimal` com `@Digits(fraction = 2)`, porque o `Dinheiro` arredondaria 3 casas em silêncio; (c) a resposta do saldo traz `ultimaConciliacao { data, saldoReal }`; (d) `GET /api/contas` lê o saldo conta a conta (consulta agregada fica para a Fase 5, como no risco da seção 7). Red: compilação sem as 12 classes da fase; green: 354 testes, cobertura 99,0% de linhas e 97,4% de ramos |
 | 1.5 | 2026-11-14 | Fase 3 concluída. Decisão T10 (saldo antes da primeira conciliação é zero). Desvios de forma: os endpoints de movimentação ficaram num `MovimentacoesController` próprio, sob o mesmo `/api/contas`; o extrato devolve `{ conta, de, ate, saldoInicial, saldoFinal, linhas[{ id, tipo, data, valor, sentido, contraparte, motivo }], conciliacoes[{ data, saldoReal, saldoCalculado, divergencia, justificativa }] }`. Teste extra: `MovimentacaoRepositoryIT`, ida e volta no banco dos cinco tipos. Red: compilação sem as 16 classes e métodos da fase; green: 389 testes, cobertura 98,8% de linhas e 96,0% de ramos |
+| 1.6 | 2026-11-14 | Fase 4 concluída. Ordem das regras do `POST /conciliacoes`: conta existe (404) → reenvio idêntico da última devolve 200 (antes de qualquer outra regra, como no reenvio de movimentação) → conta ativa → data não futura → data posterior à última. Corrida entre dois envios do mesmo dia: a violação de `UNIQUE (conta_id, data)` cai na regra de reenvio. Endpoints num `ConciliacoesController` próprio. Red: compilação sem `ConciliacaoService` e as 2 exceções; green: 406 testes, cobertura 98,7% de linhas e 96,1% de ramos |
