@@ -4,6 +4,8 @@
 # Requer: JDK 25 (SDKMAN), Docker com Compose v2. Variáveis lidas do .env.
 
 GRADLE := ./gradlew
+# Bash, não o /bin/sh padrão: no Ubuntu ele é o dash, que não tem "read -s" (senha e token sem eco) nem "read -p".
+SHELL := /bin/bash
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha \
         conta transferir conciliar consolidado \
@@ -124,7 +126,7 @@ transferir:
 	read -p "Valor (ex.: 1500.00): " VALOR; \
 	read -p "Data (AAAA-MM-DD): " DATA; \
 	read -p "Motivo (opcional): " MOTIVO; \
-	ID=$$(cat /proc/sys/kernel/random/uuid); \
+	ID=$$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen); \
 	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API)/movimentacoes/$$ID -H "Authorization: Bearer $$TOKEN" \
 	  -H 'Content-Type: application/json' \
 	  -d "{\"tipo\":\"TRANSFERENCIA\",\"origem\":\"$$ORIGEM\",\"destino\":\"$$DESTINO\",\"valor\":\"$$VALOR\",\"data\":\"$$DATA\",\"motivo\":\"$$MOTIVO\"}"
