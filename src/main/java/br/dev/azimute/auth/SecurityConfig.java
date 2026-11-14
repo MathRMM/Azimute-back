@@ -18,6 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.header.HeaderWriterFilter;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Clock;
+
 /**
  * Cadeia de segurança da API (01-modulo-auth, Configuração).
  * <p>
@@ -60,6 +62,12 @@ class SecurityConfig {
                         .contentTypeOptions(Customizer.withDefaults())
                         .httpStrictTransportSecurity(hsts -> hsts.maxAgeInSeconds(31_536_000)))
                 .build();
+    }
+
+    /** Relógio do limite de tentativas; os testes trocam por um ajustável. */
+    @Bean
+    Clock relogio() {
+        return Clock.systemDefaultZone();
     }
 
     /** Custo 12: ~250 ms por verificação, lento de propósito. Roda só no cadastro de um aparelho novo. */

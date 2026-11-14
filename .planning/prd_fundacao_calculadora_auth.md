@@ -223,31 +223,31 @@ Ao fim das fases 1 e 2, o backend deve:
 ## 10. Critérios de Aceitação
 
 **Fundação**
-- [ ] `Dinheiro`, `Competencia` e `Percentual` cobertos por testes, incluindo `HALF_EVEN` e rejeição de valores inválidos (RF01–RF03, RN01–RN03)
-- [ ] O teste de verificação do Spring Modulith passa e quebra se um módulo importar a parte interna de outro (RF04)
-- [ ] A tabela de publicação de eventos é criada e o registro de eventos funciona num teste de integração (RF05)
-- [ ] Todo erro da API segue `{ erro, mensagem, detalhes }`, sem stack trace no perfil de produção (RF06, SEC06)
-- [ ] A migration V001 cria `impedir_alteracao()` (RF07)
-- [ ] O ambiente local sobe com `docker compose up`, com o fuso `America/Sao_Paulo` (RNF05, RNF11)
+- [x] `Dinheiro`, `Competencia` e `Percentual` cobertos por testes, incluindo `HALF_EVEN` e rejeição de valores inválidos (RF01–RF03, RN01–RN03)
+- [x] O teste de verificação do Spring Modulith passa e quebra se um módulo importar a parte interna de outro (RF04)
+- [x] A tabela de publicação de eventos é criada e o registro de eventos funciona num teste de integração (RF05)
+- [x] Todo erro da API segue `{ erro, mensagem, detalhes }`, sem stack trace no perfil de produção (RF06, SEC06)
+- [x] A migration V001 cria `impedir_alteracao()` (RF07)
+- [x] O ambiente local sobe com `docker compose up`, com o fuso `America/Sao_Paulo` (RNF05, RNF11)
 
 **Calculadora**
-- [ ] `taxaImplicita` reproduz os vetores de ouro reais (3,51% / 51,3%; 4,14% / 62,6%; 2,84%) (RN07)
-- [ ] A propriedade de ida e volta passa para milhares de combinações aleatórias (RN05)
-- [ ] Os casos degenerados lançam as exceções previstas (RN04)
-- [ ] `compararAVistaVsFinanciado` devolve o delta em reais (RF15)
-- [ ] Salvar duas vezes com o mesmo ID não duplica e devolve 200 (RF20)
-- [ ] Alterar valores de uma simulação salva falha no banco; `observacao` e `status` podem mudar (RF23, RN09)
-- [ ] Estimativa sem âncora é rejeitada (RN11)
-- [ ] A comparação ignora estimativas por padrão e devolve a economia em reais (RF22)
+- [x] `taxaImplicita` reproduz os vetores de ouro reais (3,51% / 51,3%; 4,14% / 62,6%; 2,84%) (RN07)
+- [x] A propriedade de ida e volta passa para milhares de combinações aleatórias (RN05)
+- [x] Os casos degenerados lançam as exceções previstas (RN04)
+- [x] `compararAVistaVsFinanciado` devolve o delta em reais (RF15)
+- [x] Salvar duas vezes com o mesmo ID não duplica e devolve 200 (RF20)
+- [x] Alterar valores de uma simulação salva falha no banco; `observacao` e `status` podem mudar (RF23, RN09)
+- [x] Estimativa sem âncora é rejeitada (RN11)
+- [x] A comparação ignora estimativas por padrão e devolve a economia em reais (RF22)
 
 **Auth**
-- [ ] Requisição sem token, com token inválido ou revogado → 401; token válido passa (RF32, RF34)
-- [ ] O token não aparece em texto no banco (SEC02)
-- [ ] Login com senha errada não revela se o usuário existe (RN18)
-- [ ] 5 falhas bloqueiam o IP; o bloqueio global não derruba tokens existentes (RN16, RN17)
-- [ ] Troca de senha sem a senha atual falha; com sucesso, revoga os outros dispositivos (RF35)
-- [ ] A aplicação não sobe sem usuário nem `APP_SENHA_INICIAL` (RF30, SEC04)
-- [ ] Comportamento HTTP/HTTPS validado conforme a decisão de SEC12
+- [x] Requisição sem token, com token inválido ou revogado → 401; token válido passa (RF32, RF34)
+- [x] O token não aparece em texto no banco (SEC02)
+- [x] Login com senha errada não revela se o usuário existe (RN18)
+- [x] 5 falhas bloqueiam o IP; o bloqueio global não derruba tokens existentes (RN16, RN17)
+- [x] Troca de senha sem a senha atual falha; com sucesso, revoga os outros dispositivos (RF35)
+- [x] A aplicação não sobe sem usuário nem `APP_SENHA_INICIAL` (RF30, SEC04)
+- [x] Comportamento HTTP/HTTPS validado conforme a decisão de SEC12
 
 **Pendências resolvidas antes da aprovação**
 - [x] Todos os itens pendentes deste documento têm decisão registrada (seção 11)

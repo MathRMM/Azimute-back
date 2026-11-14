@@ -1,7 +1,9 @@
 package br.dev.azimute.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +29,8 @@ class AuthController {
     record CadastrarDispositivoRequest(@NotBlank String login, @NotBlank String senha,
                                        @NotBlank @Size(max = 100) String nomeDispositivo) {}
 
+    record TrocarSenhaRequest(@NotBlank String senhaAtual, @NotNull String senhaNova) {}
+
     record CadastroResponse(UUID id, String token) {}
 
     record DispositivoResponse(UUID id, String nome, OffsetDateTime criadoEm, OffsetDateTime ultimoUso, boolean atual) {}
@@ -34,15 +38,19 @@ class AuthController {
     private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
 
     private final DispositivoService servico;
+    private final SenhaService senhas;
 
-    AuthController(DispositivoService servico) {
+    AuthController(DispositivoService servico, SenhaService senhas) {
         this.servico = servico;
+        this.senhas = senhas;
     }
 
     /** Público: é aqui que um aparelho novo troca a senha por um token (RF31). */
     @PostMapping("/dispositivos")
-    CadastroResponse cadastrar(@Valid @RequestBody CadastrarDispositivoRequest corpo) {
-        var cadastro = servico.cadastrar(corpo.login(), corpo.senha(), corpo.nomeDispositivo());
+    CadastroResponse cadastrar(@Valid @RequestBody CadastrarDispositivoRequest corpo, HttpServletRequest requisicao) {
+        // No prod, getRemoteAddr() já reflete o X-Forwarded-For tratado pelo framework (forward-headers-strategy).
+        var cadastro = servico.cadastrar(corpo.login(), corpo.senha(), corpo.nomeDispositivo(),
+                requisicao.getRemoteAddr());
         return new CadastroResponse(cadastro.id().valor(), cadastro.token());
     }
 
@@ -56,6 +64,13 @@ class AuthController {
 
     private static OffsetDateTime noFuso(Instant instante) {
         return instante == null ? null : instante.atZone(FUSO).toOffsetDateTime();
+    }
+
+    /** Revoga todos os outros dispositivos; o desta requisição continua (RF35). */
+    @PostMapping("/senha")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void trocarSenha(@Valid @RequestBody TrocarSenhaRequest corpo, @AuthenticationPrincipal DispositivoAutenticado atual) {
+        senhas.trocar(atual, corpo.senhaAtual(), corpo.senhaNova());
     }
 
     @DeleteMapping("/dispositivos/{id}")
