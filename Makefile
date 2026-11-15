@@ -37,7 +37,7 @@ help:
 	@echo "    make test           Executa todos os testes e exige 90% de linhas e de ramos (JaCoCo)"
 	@echo "    make test-unit      Executa só os testes sem banco (*Test)"
 	@echo "    make test-integracao Executa só os testes com Postgres via Testcontainers (*IT)"
-	@echo "    make coverage       Mostra onde fica o relatório de cobertura da última execução"
+	@echo "    make coverage       Mostra onde ficam os relatórios de cobertura (completo e parcial)"
 	@echo "    make test-watch     Reexecuta os testes a cada mudança"
 	@echo ""
 	@echo "  Banco de dados"
@@ -79,7 +79,8 @@ test-integracao:
 	$(GRADLE) test --tests '*IT'
 
 coverage:
-	@echo "Relatório: build/reports/jacoco/test/html/index.html (gerado a cada make test)"
+	@echo "Suíte completa (make test):        build/reports/jacoco/test/html/index.html"
+	@echo "Execução parcial (test-unit/-integracao, --tests): build/reports/jacoco/parcial/html/index.html"
 
 test-watch:
 	$(GRADLE) test --continuous
