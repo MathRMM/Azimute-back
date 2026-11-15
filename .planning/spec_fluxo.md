@@ -189,20 +189,20 @@ backend-azimute-core/
 - Modelo: `FormaPagamento` selada (RNF02); `Ganho` recusa líquido maior que bruto (RN02); `TipoGanho` com os cinco tipos (RF21).
 
 **Testes (TDD):**
-- [ ] Banco → gasto à vista sem conta, ou com holerite → violação de `forma_coerente`; gasto em folha com conta → violação
-- [ ] Banco → gasto com valor zero ou negativo → violação
-- [ ] Banco → ganho com líquido maior que o bruto → violação
-- [ ] Banco → duas categorias "Lazer" e " lazer " → violação do índice único
-- [ ] Banco → dois holerites vivos na mesma competência → violação; com o primeiro excluído → aceito (T9)
-- [ ] Banco → nove categorias pré-definidas, seis rubricas no catálogo e uma regra de contrapartida de 100% existem depois da migration
-- [ ] Banco → `created_at`/`updated_at` preenchidos; `deleted_at` nulo (RNF08)
-- [ ] Modelo → `switch` sobre `FormaPagamento` cobre as duas formas sem `default`
-- [ ] Modelo → ganho com líquido maior que bruto → exceção de domínio
-- [ ] Modularidade → `ModularidadeTest` continua passando
+- [x] Banco → gasto à vista sem conta, ou com holerite → violação de `forma_coerente`; gasto em folha com conta → violação
+- [x] Banco → gasto com valor zero ou negativo → violação
+- [x] Banco → ganho com líquido maior que o bruto → violação
+- [x] Banco → duas categorias "Lazer" e " lazer " → violação do índice único
+- [x] Banco → dois holerites vivos na mesma competência → violação; com o primeiro excluído → aceito (T9)
+- [x] Banco → nove categorias pré-definidas, seis rubricas no catálogo e uma regra de contrapartida de 100% existem depois da migration
+- [x] Banco → `created_at`/`updated_at` preenchidos; `deleted_at` nulo (RNF08)
+- [x] Modelo → `switch` sobre `FormaPagamento` cobre as duas formas sem `default`
+- [x] Modelo → ganho com líquido maior que bruto → exceção de domínio
+- [x] Modularidade → `ModularidadeTest` continua passando
 
 **Checklist de validação:**
-- [ ] RF01 (dados), RF14, RF21, RN02, RN03, RN06 (banco), RNF01, RNF02, RNF08 atendidos
-- [ ] Testes desta fase e das anteriores passando; gate de 90% passando
+- [x] RF01 (dados), RF14, RF21, RN02, RN03, RN06 (banco), RNF01, RNF02, RNF08 atendidos
+- [x] Testes desta fase e das anteriores passando; gate de 90% passando
 
 **Critério de avanço:** checklist completo → Fase 3.
 

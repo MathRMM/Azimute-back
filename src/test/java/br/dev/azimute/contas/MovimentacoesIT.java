@@ -53,7 +53,7 @@ class MovimentacoesIT {
     @BeforeEach
     void preparar() throws Exception {
         mvc = ClienteDeTeste.autenticado(contexto, jdbc);
-        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas").update();
+        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas CASCADE").update();
         nubank = criarConta("Nubank", "CORRENTE", "GIRO", "3000", "2026-08-31");
         cdb = criarConta("CDB Liquidez", "INVESTIMENTO", "RESERVA", "9000", "2026-08-31");
     }

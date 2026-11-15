@@ -51,7 +51,7 @@ class ConciliacoesIT {
     @BeforeEach
     void preparar() throws Exception {
         mvc = ClienteDeTeste.autenticado(contexto, jdbc);
-        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas").update();
+        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas CASCADE").update();
         nubank = criarConta("Nubank", "CORRENTE", "GIRO");
         cdb = criarConta("CDB", "INVESTIMENTO", "RESERVA");
         // Nubank: 1000 em 01/09; sai 200 em 05/09 → calculado 800 a partir de 05/09.
