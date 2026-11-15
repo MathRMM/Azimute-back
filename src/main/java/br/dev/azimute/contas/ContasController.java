@@ -30,7 +30,7 @@ class ContasController {
             Set.of("apelido", "instituicao", "funcao", "limiteChequeEspecial", "ativa");
 
     /** Visão central (RF06): os valores globais e o saldo de cada conta que os compõe. */
-    record ConsolidadoResponse(Dinheiro posicaoGeral, Dinheiro dividas, Dinheiro saldoEmConta,
+    record ConsolidadoResponse(Dinheiro posicaoGeral, Dinheiro dividas, Dinheiro saldoEmConta, Dinheiro bloqueado,
                                List<ContaResponse> contas) {}
 
     private final ContaService contas;
@@ -44,7 +44,7 @@ class ContasController {
     @GetMapping("/consolidado")
     ConsolidadoResponse consolidado() {
         var c = consolidado.consolidado();
-        return new ConsolidadoResponse(c.posicaoGeral(), c.dividas(), c.saldoEmConta(),
+        return new ConsolidadoResponse(c.posicaoGeral(), c.dividas(), c.saldoEmConta(), c.bloqueado(),
                 c.contas().stream().map(ContaResponse::de).toList());
     }
 

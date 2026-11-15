@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -46,6 +47,26 @@ class ContasFacadeImpl implements ContasFacade {
     @Override
     public List<Conta> contasDeReserva() {
         return repositorio.listar(false).stream().filter(c -> c.funcao() == Funcao.RESERVA).toList();
+    }
+
+    @Override
+    public Optional<Conta> buscarConta(ContaId id) {
+        return repositorio.buscar(id);
+    }
+
+    @Override
+    public void alterarLancamento(UUID referencia, ContaId conta, Dinheiro valor, LocalDate data) {
+        movimentacoes.alterarDeOutroModulo(referencia, conta, valor, data);
+    }
+
+    @Override
+    public void excluirLancamento(UUID referencia) {
+        movimentacoes.excluirDeOutroModulo(referencia);
+    }
+
+    @Override
+    public void restaurarLancamento(UUID referencia) {
+        movimentacoes.restaurarDeOutroModulo(referencia);
     }
 
     private static MovimentacaoId novoId() {

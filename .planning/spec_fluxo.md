@@ -155,20 +155,20 @@ backend-azimute-core/
 - `DiasUteis` (T4): `ehDiaUtil(data)` e `diaUtilAnteriorOuMesmo(data)`, com a Páscoa calculada pelo algoritmo de Meeus/Jones/Butcher. Sem Spring, como todo o `comum`.
 
 **Testes (TDD):**
-- [ ] Banco → conta `FGTS` e `PREVIDENCIA` aceitas; tipo desconhecido recusado; limite de cheque especial em `FGTS` recusado
-- [ ] Consolidado → conta FGTS com R$ 1.000 e corrente com R$ 500: `posicaoGeral` 500, `saldoEmConta` 500, `bloqueado` 1.000
-- [ ] Consolidado → conta previdência inativa não entra em `bloqueado`
-- [ ] Fachada → alterar a saída de um gasto muda valor, data e conta, mantendo o ID da movimentação; o saldo das duas contas acompanha
-- [ ] Fachada → alterar para conta inativa → 422; inexistente → 404
-- [ ] Fachada → excluir e restaurar por referência; excluir de novo não dá erro; restaurar referência que não existe → 404
-- [ ] Fachada → alterar ou excluir uma `TRANSFERENCIA` pela referência é impossível (só `ENTRADA` e `SAIDA` têm referência de outro módulo)
-- [ ] `DiasUteis` → sábado, domingo, 25/12, 20/11 não são úteis; Carnaval, Sexta-feira Santa e Corpus Christi de 2026 e 2027 calculados certos; 31/10/2026 (sábado) → 30/10
-- [ ] Caso de borda: `diaUtilAnteriorOuMesmo` atravessando feriado colado em fim de semana (ex.: sexta-feira santa + fim de semana)
+- [x] Banco → conta `FGTS` e `PREVIDENCIA` aceitas; tipo desconhecido recusado; limite de cheque especial em `FGTS` recusado
+- [x] Consolidado → conta FGTS com R$ 1.000 e corrente com R$ 500: `posicaoGeral` 500, `saldoEmConta` 500, `bloqueado` 1.000
+- [x] Consolidado → conta previdência inativa não entra em `bloqueado`
+- [x] Fachada → alterar a saída de um gasto muda valor, data e conta, mantendo o ID da movimentação; o saldo das duas contas acompanha
+- [x] Fachada → alterar para conta inativa → 422; inexistente → 404
+- [x] Fachada → excluir e restaurar por referência; excluir de novo não dá erro; restaurar referência que não existe → 404
+- [x] Fachada → alterar ou excluir uma `TRANSFERENCIA` pela referência é impossível (só `ENTRADA` e `SAIDA` têm referência de outro módulo)
+- [x] `DiasUteis` → sábado, domingo, 25/12, 20/11 não são úteis; Carnaval, Sexta-feira Santa e Corpus Christi de 2026 e 2027 calculados certos; 31/10/2026 (sábado) → 30/10
+- [x] Caso de borda: `diaUtilAnteriorOuMesmo` atravessando feriado colado em fim de semana (ex.: sexta-feira santa + fim de semana)
 
 **Checklist de validação:**
-- [ ] RF40, RF41, RF42, RN16 e a base da RN18 (T4) atendidos
-- [ ] `api_publica_de_contas…` do `ModularidadeTest` continua com os seis tipos (a fachada só ganhou métodos)
-- [ ] Todos os testes desta fase passando; nenhum teste anterior quebrado; gate de 90% passando
+- [x] RF40, RF41, RF42, RN16 e a base da RN18 (T4) atendidos
+- [x] `api_publica_de_contas…` do `ModularidadeTest` continua com os seis tipos (a fachada só ganhou métodos)
+- [x] Todos os testes desta fase passando; nenhum teste anterior quebrado; gate de 90% passando
 
 **Critério de avanço:** checklist completo → Fase 2.
 

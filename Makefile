@@ -29,7 +29,7 @@ help:
 	@echo "    make conta          Cadastra uma conta com o saldo de hoje"
 	@echo "    make transferir     Transfere entre duas contas (IDs de make consolidado)"
 	@echo "    make conciliar      Informa o saldo real de uma conta e mostra a divergência"
-	@echo "    make consolidado    Mostra a posição geral, o saldo em conta e cada conta"
+	@echo "    make consolidado    Mostra a posição geral, o saldo em conta, o bloqueado (FGTS e previdência) e cada conta"
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
 	@echo ""
@@ -112,7 +112,7 @@ conta:
 	@read -p "Token do dispositivo: " -s TOKEN; echo; \
 	read -p "Apelido: " APELIDO; \
 	read -p "Instituição: " INSTITUICAO; \
-	read -p "Tipo (CORRENTE, POUPANCA, INVESTIMENTO, CARTEIRA, BENEFICIO): " TIPO; \
+	read -p "Tipo (CORRENTE, POUPANCA, INVESTIMENTO, CARTEIRA, BENEFICIO, FGTS, PREVIDENCIA): " TIPO; \
 	read -p "Função (GIRO, RESERVA): " FUNCAO; \
 	read -p "Saldo de hoje (ex.: 2300.00): " SALDO; \
 	read -p "Limite de cheque especial (só corrente, Enter para nenhum): " LIMITE; \
