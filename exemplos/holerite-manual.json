@@ -1,0 +1,21 @@
+{
+  "competencia": "2026-10",
+  "rubricas": [
+    { "codigo": "0001", "descricao": "Salário Mensal", "vencimento": "5000.00" },
+    { "codigo": "/314", "descricao": "INSS", "referencia": "14.00", "desconto": "480.00" },
+    { "codigo": "/507", "descricao": "Vale-Transporte", "desconto": "300.00" },
+    { "codigo": "2363", "descricao": "Prev Priv Bas Func", "desconto": "50.00" },
+    { "codigo": "2364", "descricao": "Prev Priv Vol Func", "desconto": "250.00" },
+    { "codigo": "/B02", "descricao": "Decto Adto Salário", "desconto": "2500.00" }
+  ],
+  "totalVencimentos": "5000.00",
+  "totalDescontos": "3580.00",
+  "liquido": "1420.00",
+  "bases": {
+    "salarioBase": "5000.00",
+    "baseInss": "5000.00",
+    "baseFgts": "5000.00",
+    "fgtsMes": "400.00",
+    "baseIrrf": "4170.00"
+  }
+}

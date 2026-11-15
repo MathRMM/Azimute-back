@@ -77,6 +77,22 @@ class ModeloDaFolhaTest {
     }
 
     @Test
+    void regra_vigente_e_a_de_maior_inicio_ate_a_competencia_e_a_contrapartida_arredonda() {
+        var regras = List.of(new RegraContrapartida(Competencia.de("2000-01"), BigDecimal.ONE),
+                new RegraContrapartida(Competencia.de("2027-01"), new BigDecimal("0.5")));
+
+        assertThat(RegraContrapartida.vigente(regras, Competencia.de("2026-12")).percentualDaBasica())
+                .isEqualByComparingTo("1");
+        assertThat(RegraContrapartida.vigente(regras, Competencia.de("2027-01")).percentualDaBasica())
+                .isEqualByComparingTo("0.5");
+        assertThat(RegraContrapartida.vigente(List.of(), NOVEMBRO).percentualDaBasica()).isZero();
+        assertThat(new RegraContrapartida(NOVEMBRO, new BigDecimal("0.5")).contrapartida(Dinheiro.de("50.05")))
+                .isEqualTo(Dinheiro.de("25.02"));
+        assertThat(new RegraContrapartida(NOVEMBRO, new BigDecimal("0.5")).percentual())
+                .isEqualByComparingTo("50");
+    }
+
+    @Test
     void holerite_recusa_totais_incoerentes() {
         assertThatCode(() -> holerite("3800")).doesNotThrowAnyException();
         assertThatThrownBy(() -> holerite("3700")).isInstanceOf(IllegalArgumentException.class);

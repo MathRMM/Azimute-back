@@ -9,6 +9,7 @@ SHELL := /bin/bash
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha docs \
         conta transferir conciliar consolidado categorias categoria gasto gastos ganho ganhos \
+        folha-configurar adiantamento holerite-manual \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -38,6 +39,11 @@ help:
 	@echo "    make gastos         Lista os gastos de uma competência (AAAA-MM)"
 	@echo "    make ganho          Registra um ganho avulso já recebido (PLR, FREELA, REEMBOLSO, OUTRO)"
 	@echo "    make ganhos         Lista os ganhos de uma competência, com os recebimentos"
+	@echo ""
+	@echo "  Folha (pedem o token do dispositivo, sem eco)"
+	@echo "    make folha-configurar Define as contas do salário, do FGTS e da previdência"
+	@echo "    make adiantamento   Lança o adiantamento antes de o holerite chegar"
+	@echo "    make holerite-manual Envia um holerite em JSON (padrão: exemplos/holerite-manual.json, fictício)"
 	@echo ""
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
@@ -211,6 +217,35 @@ ganhos:
 	COMPETENCIA=$${COMPETENCIA:-$$(date +%Y-%m)}; \
 	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/ganhos?competencia=$$COMPETENCIA" \
 	  -H "Authorization: Bearer $$TOKEN"
+
+folha-configurar:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "ID da conta do salário: " SALARIO; \
+	read -p "ID da conta FGTS: " FGTS; \
+	read -p "ID da conta de previdência: " PREVIDENCIA; \
+	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API_FLUXO)/folha/configuracao -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"contaSalario\":\"$$SALARIO\",\"contaFgts\":\"$$FGTS\",\"contaPrevidencia\":\"$$PREVIDENCIA\"}"
+
+adiantamento:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Competência (AAAA-MM, Enter para o mês atual): " COMPETENCIA; \
+	COMPETENCIA=$${COMPETENCIA:-$$(date +%Y-%m)}; \
+	read -p "Valor (ex.: 2500.00): " VALOR; \
+	read -p "Data (AAAA-MM-DD, Enter para o dia 15 ou o dia útil anterior): " DATA; \
+	DATA_JSON=$$( [ -n "$$DATA" ] && echo ",\"data\":\"$$DATA\"" ); \
+	ID=$$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen); \
+	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API_FLUXO)/folha/adiantamentos/$$ID \
+	  -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+	  -d "{\"competencia\":\"$$COMPETENCIA\",\"valor\":\"$$VALOR\"$$DATA_JSON}"
+
+holerite-manual:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Arquivo JSON (Enter para exemplos/holerite-manual.json): " ARQUIVO; \
+	ARQUIVO=$${ARQUIVO:-exemplos/holerite-manual.json}; \
+	test -f "$$ARQUIVO" || { echo "Arquivo não encontrado: $$ARQUIVO"; exit 1; }; \
+	curl -s -w "\nHTTP %{http_code}\n" -X POST $(API_FLUXO)/folha/holerites/manual \
+	  -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' --data-binary "@$$ARQUIVO"
 
 docs:
 	@echo "Swagger UI: http://localhost:8080/swagger-ui.html (perfil dev; suba com make dev)"
