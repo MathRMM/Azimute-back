@@ -8,7 +8,7 @@ GRADLE := ./gradlew
 SHELL := /bin/bash
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha docs \
-        conta transferir conciliar consolidado categorias categoria gasto gastos \
+        conta transferir conciliar consolidado categorias categoria gasto gastos ganho ganhos \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -36,6 +36,8 @@ help:
 	@echo "    make categoria      Cria uma categoria de gasto"
 	@echo "    make gasto          Registra um gasto à vista (sai da conta escolhida)"
 	@echo "    make gastos         Lista os gastos de uma competência (AAAA-MM)"
+	@echo "    make ganho          Registra um ganho avulso já recebido (PLR, FREELA, REEMBOLSO, OUTRO)"
+	@echo "    make ganhos         Lista os ganhos de uma competência, com os recebimentos"
 	@echo ""
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
@@ -184,6 +186,30 @@ gastos:
 	read -p "Competência (AAAA-MM, Enter para o mês atual): " COMPETENCIA; \
 	COMPETENCIA=$${COMPETENCIA:-$$(date +%Y-%m)}; \
 	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/gastos?competencia=$$COMPETENCIA" \
+	  -H "Authorization: Bearer $$TOKEN"
+
+ganho:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "ID da conta que recebeu (de make consolidado): " CONTA; \
+	read -p "Tipo (PLR, FREELA, REEMBOLSO, OUTRO): " TIPO; \
+	read -p "Descrição: " DESCRICAO; \
+	read -p "Bruto (ex.: 1000.00): " BRUTO; \
+	read -p "Líquido recebido (Enter para igual ao bruto): " LIQUIDO; \
+	LIQUIDO=$${LIQUIDO:-$$BRUTO}; \
+	read -p "Data do recebimento (AAAA-MM-DD, Enter para hoje): " DATA; \
+	DATA=$${DATA:-$$(date +%F)}; \
+	read -p "Competência (AAAA-MM, Enter para o mês do recebimento): " COMPETENCIA; \
+	COMPETENCIA=$${COMPETENCIA:-$${DATA:0:7}}; \
+	ID=$$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen); \
+	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API_FLUXO)/ganhos/$$ID -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"competencia\":\"$$COMPETENCIA\",\"descricao\":\"$$DESCRICAO\",\"tipo\":\"$$TIPO\",\"bruto\":\"$$BRUTO\",\"liquido\":\"$$LIQUIDO\",\"conta\":\"$$CONTA\",\"recebidoEm\":\"$$DATA\"}"
+
+ganhos:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Competência (AAAA-MM, Enter para o mês atual): " COMPETENCIA; \
+	COMPETENCIA=$${COMPETENCIA:-$$(date +%Y-%m)}; \
+	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/ganhos?competencia=$$COMPETENCIA" \
 	  -H "Authorization: Bearer $$TOKEN"
 
 docs:

@@ -258,17 +258,17 @@ backend-azimute-core/
 - Publica `GanhoRegistrado` (RF52).
 
 **Testes (TDD):**
-- [ ] Serviço → registrar ganho chama a entrada com a referência do recebimento; líquido maior que bruto → 422 (RN02)
-- [ ] Serviço → tipo `SALARIO` → 422; reenvio idêntico → 200; diferente → 409
-- [ ] API → `PUT` cria e o saldo da conta sobe; editar o líquido ajusta a entrada; excluir e restaurar refletem no saldo
-- [ ] API → listagem da competência traz bruto, líquido, tipo e recebimentos
-- [ ] Evento → `GanhoRegistrado` publicado depois do commit
-- [ ] Caso de borda: competência diferente do mês do recebimento (salário de outubro pago em novembro) é aceita (RN09)
+- [x] Serviço → registrar ganho chama a entrada com a referência do recebimento; líquido maior que bruto → 422 (RN02)
+- [x] Serviço → tipo `SALARIO` → 422; reenvio idêntico → 200; diferente → 409
+- [x] API → `PUT` cria e o saldo da conta sobe; editar o líquido ajusta a entrada; excluir e restaurar refletem no saldo
+- [x] API → listagem da competência traz bruto, líquido, tipo e recebimentos
+- [x] Evento → `GanhoRegistrado` publicado depois do commit
+- [x] Caso de borda: competência diferente do mês do recebimento (salário de outubro pago em novembro) é aceita (RN09)
 
 **Checklist de validação:**
-- [ ] RF20–RF24, RN02, RN04, RN09, RF52 (`GanhoRegistrado`), P4 atendidos
-- [ ] Alvo `make ganho` testado rodando o `make`
-- [ ] Testes desta fase e das anteriores passando; gate de 90% passando
+- [x] RF20–RF24, RN02, RN04, RN09, RF52 (`GanhoRegistrado`), P4 atendidos
+- [x] Alvo `make ganho` testado rodando o `make`
+- [x] Testes desta fase e das anteriores passando; gate de 90% passando
 
 **Critério de avanço:** checklist completo → Fase 5.
 
