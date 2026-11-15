@@ -7,54 +7,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** RF52, T13: {@code GastoLancado} só chega a quem ouve depois do commit; transação desfeita não publica. */
 @SpringBootTest
-@Import({TestcontainersConfig.class, GastoLancadoIT.Ouvinte.class})
+@Import({TestcontainersConfig.class, OuvinteDeEventos.class})
 class GastoLancadoIT {
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class Ouvinte {
-
-        @Bean
-        Registro registro() {
-            return new Registro(new CopyOnWriteArrayList<>());
-        }
-
-        /** Classe aberta, não record: o Spring cria um proxy do ouvinte. */
-        static class Registro {
-            private final List<GastoLancado> recebidos;
-
-            Registro(List<GastoLancado> recebidos) {
-                this.recebidos = recebidos;
-            }
-
-            List<GastoLancado> recebidos() {
-                return recebidos;
-            }
-
-            @TransactionalEventListener
-            void aoLancar(GastoLancado evento) {
-                recebidos.add(evento);
-            }
-        }
-    }
-
     @Autowired GastoService gastos;
-    @Autowired Ouvinte.Registro ouvinte;
+    @Autowired OuvinteDeEventos.Registro ouvinte;
     @Autowired JdbcClient jdbc;
 
     MontadorDeFluxo fluxo;
