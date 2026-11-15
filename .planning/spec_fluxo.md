@@ -226,20 +226,20 @@ backend-azimute-core/
 - Publica `GastoLancado` no registro (RF52, T13).
 
 **Testes (TDD):**
-- [ ] Serviço → registrar gasto chama a saída com o ID do gasto, valor e data; falha na fachada → nada gravado (RN04)
-- [ ] Serviço → reenvio idêntico não chama a fachada de novo; corpo diferente → 409
-- [ ] Serviço → editar valor, data e conta chama `alterarLancamento` com os novos valores
-- [ ] Serviço → gasto em folha: editar valor → 422; editar categoria → aceito
-- [ ] API → `PUT` cria (201) e o saldo da conta cai; reenvio → 200; `DELETE` → 204 e o saldo volta; `restaurar` → 200 e o saldo cai de novo
-- [ ] API → categoria criada inline é usada no gasto seguinte; renomear muda o nome na listagem de gastos; desativada some do `GET /api/categorias` e recusa gasto novo
-- [ ] API → valor com 3 casas, zero ou negativo → 422; sem token → 401
-- [ ] Evento → `GastoLancado` publicado depois do commit, e não publicado quando a transação falha
-- [ ] Caso de borda: gasto com data futura aceito (RN08); gasto em conta inativa → 422
+- [x] Serviço → registrar gasto chama a saída com o ID do gasto, valor e data; falha na fachada → nada gravado (RN04)
+- [x] Serviço → reenvio idêntico não chama a fachada de novo; corpo diferente → 409
+- [x] Serviço → editar valor, data e conta chama `alterarLancamento` com os novos valores
+- [x] Serviço → gasto em folha: editar valor → 422; editar categoria → aceito
+- [x] API → `PUT` cria (201) e o saldo da conta cai; reenvio → 200; `DELETE` → 204 e o saldo volta; `restaurar` → 200 e o saldo cai de novo
+- [x] API → categoria criada inline é usada no gasto seguinte; renomear muda o nome na listagem de gastos; desativada some do `GET /api/categorias` e recusa gasto novo
+- [x] API → valor com 3 casas, zero ou negativo → 422; sem token → 401
+- [x] Evento → `GastoLancado` publicado depois do commit, e não publicado quando a transação falha
+- [x] Caso de borda: gasto com data futura aceito (RN08); gasto em conta inativa → 422
 
 **Checklist de validação:**
-- [ ] RF02–RF04, RF10–RF13, RF15 (API de gasto), RN01, RN04–RN09, RF52 (`GastoLancado`) atendidos
-- [ ] Alvo `make gasto` testado rodando o `make`
-- [ ] Testes desta fase e das anteriores passando; gate de 90% passando
+- [x] RF02–RF04, RF10–RF13, RF15 (API de gasto), RN01, RN04–RN09, RF52 (`GastoLancado`) atendidos
+- [x] Alvo `make gasto` testado rodando o `make`
+- [x] Testes desta fase e das anteriores passando; gate de 90% passando
 
 **Critério de avanço:** checklist completo → Fase 4.
 
