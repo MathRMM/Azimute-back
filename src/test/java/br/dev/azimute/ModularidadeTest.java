@@ -76,7 +76,7 @@ class ModularidadeTest {
                 .filter(c -> c.getPackageName().equals("br.dev.azimute.fluxo"))
                 .filter(c -> c.isTopLevelClass() && c.getModifiers().contains(JavaModifier.PUBLIC))
                 .map(JavaClass::getSimpleName))
-                .containsExactlyInAnyOrder("GastoId", "GanhoId", "CategoriaId");
+                .containsExactlyInAnyOrder("GastoId", "GanhoId", "CategoriaId", "GastoLancado");
     }
 
     @Test

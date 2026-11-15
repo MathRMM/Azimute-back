@@ -8,7 +8,7 @@ GRADLE := ./gradlew
 SHELL := /bin/bash
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha docs \
-        conta transferir conciliar consolidado \
+        conta transferir conciliar consolidado categorias categoria gasto gastos \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -30,6 +30,13 @@ help:
 	@echo "    make transferir     Transfere entre duas contas (IDs de make consolidado)"
 	@echo "    make conciliar      Informa o saldo real de uma conta e mostra a divergência"
 	@echo "    make consolidado    Mostra a posição geral, o saldo em conta, o bloqueado (FGTS e previdência) e cada conta"
+	@echo ""
+	@echo "  Fluxo (pedem o token do dispositivo, sem eco)"
+	@echo "    make categorias     Lista as categorias de gasto ativas, com os IDs"
+	@echo "    make categoria      Cria uma categoria de gasto"
+	@echo "    make gasto          Registra um gasto à vista (sai da conta escolhida)"
+	@echo "    make gastos         Lista os gastos de uma competência (AAAA-MM)"
+	@echo ""
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
 	@echo ""
@@ -146,6 +153,38 @@ conciliar:
 consolidado:
 	@read -p "Token do dispositivo: " -s TOKEN; echo; \
 	curl -s -w "\nHTTP %{http_code}\n" $(API)/consolidado -H "Authorization: Bearer $$TOKEN"
+
+API_FLUXO := http://localhost:8080/api
+
+categorias:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	curl -s -w "\nHTTP %{http_code}\n" $(API_FLUXO)/categorias -H "Authorization: Bearer $$TOKEN"
+
+categoria:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Nome: " NOME; \
+	curl -s -w "\nHTTP %{http_code}\n" -X POST $(API_FLUXO)/categorias -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' -d "{\"nome\":\"$$NOME\"}"
+
+gasto:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "ID da conta (de make consolidado): " CONTA; \
+	read -p "ID da categoria (de make categorias): " CATEGORIA; \
+	read -p "Descrição: " DESCRICAO; \
+	read -p "Valor (ex.: 120.00): " VALOR; \
+	read -p "Data (AAAA-MM-DD, Enter para hoje): " DATA; \
+	DATA=$${DATA:-$$(date +%F)}; \
+	ID=$$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen); \
+	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API_FLUXO)/gastos/$$ID -H "Authorization: Bearer $$TOKEN" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"data\":\"$$DATA\",\"descricao\":\"$$DESCRICAO\",\"valor\":\"$$VALOR\",\"categoria\":\"$$CATEGORIA\",\"conta\":\"$$CONTA\"}"
+
+gastos:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Competência (AAAA-MM, Enter para o mês atual): " COMPETENCIA; \
+	COMPETENCIA=$${COMPETENCIA:-$$(date +%Y-%m)}; \
+	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/gastos?competencia=$$COMPETENCIA" \
+	  -H "Authorization: Bearer $$TOKEN"
 
 docs:
 	@echo "Swagger UI: http://localhost:8080/swagger-ui.html (perfil dev; suba com make dev)"
