@@ -37,3 +37,10 @@ server:
   error:
     include-stacktrace: never             # SEC06
     include-message: never
+
+# Documentação da API (springdoc): desligada por padrão e no prod; o perfil dev liga.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

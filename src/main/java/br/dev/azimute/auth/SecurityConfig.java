@@ -30,11 +30,18 @@ import java.time.Clock;
 @EnableWebSecurity
 class SecurityConfig {
 
+    private static final String[] DOCUMENTACAO = {"/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"};
+
     @Bean
     SecurityFilterChain cadeiaDeSeguranca(HttpSecurity http, DispositivoRepository dispositivos,
                                           JsonMapper json, Environment ambiente) throws Exception {
         var erro = new RespostaDeErro(json);
-        var exigirHttps = !ambiente.acceptsProfiles(Profiles.of("dev"));
+        var dev = ambiente.acceptsProfiles(Profiles.of("dev"));
+        var exigirHttps = !dev;
+        // Documentação da API: aberta só no dev, onde o springdoc está ligado. Fora dele os caminhos nem existem.
+        if (dev) {
+            http.authorizeHttpRequests(a -> a.requestMatchers(DOCUMENTACAO).permitAll());
+        }
 
         return http
                 .authorizeHttpRequests(a -> a
