@@ -124,6 +124,28 @@ class HoleriteRepository {
         }
     }
 
+    /** T8: o PDF fica à parte, para a listagem não carregar o arquivo. */
+    void salvarArquivo(HoleriteId id, byte[] conteudo) {
+        jdbc.sql("INSERT INTO fluxo.holerite_arquivos (holerite_id, conteudo) VALUES (:h, :conteudo)")
+                .param("h", id.valor()).param("conteudo", conteudo).update();
+    }
+
+    Optional<byte[]> arquivo(HoleriteId id) {
+        return jdbc.sql("SELECT conteudo FROM fluxo.holerite_arquivos WHERE holerite_id = :h")
+                .param("h", id.valor()).query((rs, n) -> rs.getBytes("conteudo")).optional();
+    }
+
+    /** Holerites vivos do ano, em ordem de competência (RF37). */
+    List<Holerite> listar(int ano) {
+        return jdbc.sql("SELECT " + COLUNAS + """
+                         FROM fluxo.holerites
+                        WHERE deleted_at IS NULL AND competencia >= :inicio AND competencia < :fim
+                        ORDER BY competencia""")
+                .param("inicio", LocalDate.of(ano, 1, 1)).param("fim", LocalDate.of(ano + 1, 1, 1))
+                .query(HoleriteRepository::mapear).list()
+                .stream().map(Registro::holerite).toList();
+    }
+
     /** RF35b: só a correção explícita muda a contrapartida gravada (RN19). */
     void alterarContrapartida(HoleriteId id, Dinheiro contrapartida) {
         jdbc.sql("UPDATE fluxo.holerites SET contrapartida_previdencia = :c, updated_at = now() WHERE id = :id")

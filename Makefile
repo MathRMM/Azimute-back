@@ -9,7 +9,7 @@ SHELL := /bin/bash
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha docs \
         conta transferir conciliar consolidado categorias categoria gasto gastos ganho ganhos \
-        folha-configurar adiantamento holerite-manual \
+        folha-configurar adiantamento holerite holerite-manual holerites \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -43,7 +43,9 @@ help:
 	@echo "  Folha (pedem o token do dispositivo, sem eco)"
 	@echo "    make folha-configurar Define as contas do salário, do FGTS e da previdência"
 	@echo "    make adiantamento   Lança o adiantamento antes de o holerite chegar"
+	@echo "    make holerite       Envia o PDF do holerite (caminho do arquivo; datas opcionais)"
 	@echo "    make holerite-manual Envia um holerite em JSON (padrão: exemplos/holerite-manual.json, fictício)"
+	@echo "    make holerites      Lista os holerites de um ano"
 	@echo ""
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
@@ -238,6 +240,22 @@ adiantamento:
 	curl -s -w "\nHTTP %{http_code}\n" -X PUT $(API_FLUXO)/folha/adiantamentos/$$ID \
 	  -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
 	  -d "{\"competencia\":\"$$COMPETENCIA\",\"valor\":\"$$VALOR\"$$DATA_JSON}"
+
+holerite:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Caminho do PDF do holerite: " ARQUIVO; \
+	test -f "$$ARQUIVO" || { echo "Arquivo não encontrado: $$ARQUIVO"; exit 1; }; \
+	read -p "Data do adiantamento (AAAA-MM-DD, Enter para a padrão): " ADIANTAMENTO; \
+	read -p "Data do líquido (AAAA-MM-DD, Enter para a padrão): " LIQUIDO; \
+	curl -s -w "\nHTTP %{http_code}\n" -X POST $(API_FLUXO)/folha/holerites -H "Authorization: Bearer $$TOKEN" \
+	  -F "arquivo=@$$ARQUIVO;type=application/pdf" \
+	  $${ADIANTAMENTO:+-F "dataAdiantamento=$$ADIANTAMENTO"} $${LIQUIDO:+-F "dataLiquido=$$LIQUIDO"}
+
+holerites:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Ano (Enter para o atual): " ANO; \
+	ANO=$${ANO:-$$(date +%Y)}; \
+	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/folha/holerites?ano=$$ANO" -H "Authorization: Bearer $$TOKEN"
 
 holerite-manual:
 	@read -p "Token do dispositivo: " -s TOKEN; echo; \

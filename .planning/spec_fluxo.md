@@ -334,21 +334,21 @@ backend-azimute-core/
 - Garantir que nenhum log do leitor ou do upload contenha valores ou texto do PDF (SEC02).
 
 **Testes (TDD):**
-- [ ] Leitor → o holerite sintético é lido com competência, as seis rubricas, totais, líquido e FGTS do mês exatos
-- [ ] Leitor → número `1.234.567,89` lido certo; rubrica sem referência; linha de rubrica vazia ignorada
-- [ ] Leitor → PDF sem o cabeçalho do layout → erro "layout desconhecido"; sem a linha do líquido → erro apontando "líquido"
-- [ ] Leitor → PDF de 3 páginas ou cifrado → recusado (SEC06)
-- [ ] API → upload do sintético produz o mesmo resultado que o lançamento manual do mesmo conteúdo (RF31 = RF32)
-- [ ] API → arquivo que não começa com `%PDF-` → 422; maior que 2 MB → 413 (SEC04, T12)
-- [ ] API → mesmo PDF reenviado → 200; o PDF baixado pelo `GET /{id}/pdf` é idêntico ao enviado (RF37, T8)
-- [ ] Log → importação e erro de leitura não escrevem valores nem o texto do PDF (SEC02, verificado com captura de log)
-- [ ] Desempenho → importação do sintético abaixo de 2 s no teste de integração (RNF05)
+- [x] Leitor → o holerite sintético é lido com competência, as seis rubricas, totais, líquido e FGTS do mês exatos
+- [x] Leitor → número `1.234.567,89` lido certo; rubrica sem referência; linha de rubrica vazia ignorada
+- [x] Leitor → PDF sem o cabeçalho do layout → erro "layout desconhecido"; sem a linha do líquido → erro apontando "líquido"
+- [x] Leitor → PDF de 3 páginas ou cifrado → recusado (SEC06)
+- [x] API → upload do sintético produz o mesmo resultado que o lançamento manual do mesmo conteúdo (RF31 = RF32)
+- [x] API → arquivo que não começa com `%PDF-` → 422; maior que 2 MB → 413 (SEC04, T12)
+- [x] API → mesmo PDF reenviado → 200; o PDF baixado pelo `GET /{id}/pdf` é idêntico ao enviado (RF37, T8)
+- [x] Log → importação e erro de leitura não escrevem valores nem o texto do PDF (SEC02, verificado com captura de log)
+- [x] Desempenho → importação do sintético abaixo de 2 s no teste de integração (RNF05)
 
 **Checklist de validação:**
-- [ ] RF31, RF37, RNF03, RNF04, RNF05, SEC02–SEC06 atendidos
-- [ ] **Validação com o holerite real**, fora do repositório, numa stack isolada: os valores lidos batem com o PDF (feita pelo usuário ou com o PDF numa pasta fora do git)
-- [ ] Alvo `make holerite` (upload do PDF por caminho) testado rodando o `make`
-- [ ] Testes desta fase e das anteriores passando; gate de 90% passando
+- [x] RF31, RF37, RNF03, RNF04, RNF05, SEC02–SEC06 atendidos
+- [x] **Validação com o holerite real**, fora do repositório, numa stack isolada: os valores lidos batem com o PDF (feita pelo usuário ou com o PDF numa pasta fora do git)
+- [x] Alvo `make holerite` (upload do PDF por caminho) testado rodando o `make`
+- [x] Testes desta fase e das anteriores passando; gate de 90% passando
 
 **Critério de avanço:** checklist completo → Fase 7.
 
