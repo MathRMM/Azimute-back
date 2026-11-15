@@ -1,0 +1,8 @@
+# Perfil de produção: atrás do Caddy, log em JSON.
+server:
+  forward-headers-strategy: framework     # X-Forwarded-Proto/For do proxy (SEC12)
+
+logging:
+  structured:
+    format:
+      console: ecs                        # RNF12

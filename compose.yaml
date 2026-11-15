@@ -1,0 +1,42 @@
+# Ambiente local: app + postgres numa rede interna.
+# O Postgres não publica porta no host (SEC10). Para acessar pela IDE, crie um
+# compose.override.yaml local (ignorado pelo git) publicando a 5432.
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${DB_NOME:?defina DB_NOME no .env}
+      POSTGRES_USER: ${DB_USUARIO:?defina DB_USUARIO no .env}
+      POSTGRES_PASSWORD: ${DB_SENHA:?defina DB_SENHA no .env}
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [interna]
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NOME}
+      DB_USUARIO: ${DB_USUARIO}
+      DB_SENHA: ${DB_SENHA}
+      APP_SENHA_INICIAL: ${APP_SENHA_INICIAL:-}
+      TZ: America/Sao_Paulo
+    ports:
+      - "8080:8080"
+    networks: [interna]
+
+volumes:
+  pgdata:
+
+networks:
+  interna:
