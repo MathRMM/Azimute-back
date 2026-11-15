@@ -7,7 +7,7 @@ GRADLE := ./gradlew
 # Bash, não o /bin/sh padrão: no Ubuntu ele é o dash, que não tem "read -s" (senha e token sem eco) nem "read -p".
 SHELL := /bin/bash
 
-.PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha \
+.PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha docs \
         conta transferir conciliar consolidado \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
@@ -23,6 +23,7 @@ help:
 	@echo "    make dev            Sobe app + postgres no perfil dev (docker compose)"
 	@echo "    make dispositivo    Cadastra um dispositivo e mostra o token (uma vez)"
 	@echo "    make senha          Troca a senha; revoga os outros dispositivos (o do token continua)"
+	@echo "    make docs           Mostra onde abrir o Swagger UI (só no perfil dev, sem token)"
 	@echo ""
 	@echo "  Contas (pedem o token do dispositivo, sem eco)"
 	@echo "    make conta          Cadastra uma conta com o saldo de hoje"
@@ -144,6 +145,10 @@ conciliar:
 consolidado:
 	@read -p "Token do dispositivo: " -s TOKEN; echo; \
 	curl -s -w "\nHTTP %{http_code}\n" $(API)/consolidado -H "Authorization: Bearer $$TOKEN"
+
+docs:
+	@echo "Swagger UI: http://localhost:8080/swagger-ui.html (perfil dev; suba com make dev)"
+	@echo "OpenAPI:    http://localhost:8080/v3/api-docs"
 
 build:
 	$(GRADLE) build

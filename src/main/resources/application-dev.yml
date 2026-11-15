@@ -2,3 +2,10 @@
 logging:
   level:
     br.dev.azimute: debug
+
+# Swagger UI em http://localhost:8080/swagger-ui.html, sem token (só no dev).
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
