@@ -64,7 +64,7 @@ tasks.withType<Test> {
         includeEngines("junit-jupiter", "jqwik")
     }
     systemProperty("user.timezone", "America/Sao_Paulo")
-    finalizedBy(tasks.jacocoTestReport)
+    finalizedBy(tasks.jacocoTestReport, "relatorioParcial")
 }
 
 // Só o ponto de entrada fica fora: é um main de três linhas que nenhum teste chama.
@@ -72,11 +72,29 @@ val classesMedidas = sourceSets.main.get().output.classesDirs.asFileTree.matchin
     exclude("br/dev/azimute/AzimuteApplication*")
 }
 
+// Execução com --tests (make test-unit, make test-integracao, IDE) mede só uma parte do código.
+// O relatório dela vai para jacoco/parcial e nunca sobrescreve o da suíte completa (jacoco/test).
+val execucaoParcial = gradle.startParameter.taskRequests.flatMap { it.args }.any { it.startsWith("--tests") }
+
 tasks.jacocoTestReport {
+    onlyIf("só a suíte completa gera o relatório principal") { !execucaoParcial }
     classDirectories.setFrom(classesMedidas)
     reports {
         xml.required = true
         html.required = true
+    }
+}
+
+tasks.register<JacocoReport>("relatorioParcial") {
+    description = "Cobertura de uma execução filtrada por --tests (não vale para o mínimo de 90%)."
+    onlyIf("só execuções filtradas geram o relatório parcial") { execucaoParcial }
+    executionData(layout.buildDirectory.file("jacoco/test.exec"))
+    sourceSets(sourceSets.main.get())
+    classDirectories.setFrom(classesMedidas)
+    reports {
+        xml.required = false
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir("reports/jacoco/parcial/html")
     }
 }
 
