@@ -1,10 +1,12 @@
 package br.dev.azimute.contas;
 
+import br.dev.azimute.comum.Dinheiro;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Transferências e rendimentos pela API, exclusão lógica, restauração e extrato (RF10–RF15).
@@ -55,6 +57,42 @@ class MovimentacaoService {
     void registrarDeOutroModulo(Movimentacao movimentacao) {
         exigirContasAtivas(movimentacao);
         movimentacoes.inserirSeAusente(movimentacao);
+    }
+
+    /**
+     * Correção de um ganho ou gasto pelo módulo dono (RF42 do PRD do fluxo): a entrada ou saída viva muda de conta,
+     * valor e data no lugar. A conta nova precisa existir e estar ativa (RN08).
+     */
+    void alterarDeOutroModulo(UUID referencia, ContaId conta, Dinheiro valor, LocalDate data) {
+        var registro = movimentacoes.buscarPorReferencia(referencia)
+                .filter(r -> !r.excluida())
+                .orElseThrow(() -> new LancamentoNaoEncontradoException(referencia));
+        var alterada = switch (registro.movimentacao()) {
+            case Movimentacao.Entrada e -> new Movimentacao.Entrada(e.id(), conta, e.ganhoId(), valor, data);
+            case Movimentacao.Saida s -> new Movimentacao.Saida(s.id(), conta, s.gastoId(), valor, data);
+            // A busca por referência só traz entrada e saída; os outros tipos não têm referência de ganho ou gasto.
+            case Movimentacao.Transferencia t -> throw new LancamentoNaoEncontradoException(referencia);
+            case Movimentacao.PagamentoFatura p -> throw new LancamentoNaoEncontradoException(referencia);
+            case Movimentacao.Rendimento r -> throw new LancamentoNaoEncontradoException(referencia);
+        };
+        exigirContasAtivas(alterada);
+        movimentacoes.alterar(alterada);
+    }
+
+    /** Exclusão pelo módulo dono. Referência inexistente ou já excluída não é erro (T3). */
+    void excluirDeOutroModulo(UUID referencia) {
+        movimentacoes.buscarPorReferencia(referencia)
+                .filter(r -> !r.excluida())
+                .ifPresent(r -> movimentacoes.excluir(r.movimentacao().id()));
+    }
+
+    /** Restauração pelo módulo dono. Se já há uma viva com a referência, nada muda (T3). */
+    void restaurarDeOutroModulo(UUID referencia) {
+        var registro = movimentacoes.buscarPorReferencia(referencia)
+                .orElseThrow(() -> new LancamentoNaoEncontradoException(referencia));
+        if (registro.excluida()) {
+            movimentacoes.restaurar(registro.movimentacao().id());
+        }
     }
 
     /** Exclusão lógica (RF13). Excluir o que não existe ou já foi excluído não é erro (T3). */

@@ -5,6 +5,7 @@ import br.dev.azimute.comum.Dinheiro;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -28,4 +29,20 @@ public interface ContasFacade {
 
     /** Só as contas ativas com função {@code RESERVA}, para a conciliação com as categorias de reserva. */
     List<Conta> contasDeReserva();
+
+    /** A conta, ativa ou não; vazio quando não existe. O {@code fluxo} confere o tipo das contas da folha. */
+    Optional<Conta> buscarConta(ContaId id);
+
+    /**
+     * Corrige a entrada ou saída viva lançada com essa referência: conta, valor e data mudam, o ID da movimentação
+     * fica (RF42 e T2 do SPEC do fluxo). Referência sem lançamento vivo → {@code LANCAMENTO_NAO_ENCONTRADO};
+     * conta nova inexistente ou inativa é recusada (RN08).
+     */
+    void alterarLancamento(UUID referencia, ContaId conta, Dinheiro valor, LocalDate data);
+
+    /** Exclusão lógica pela referência. Inexistente ou já excluída não é erro. */
+    void excluirLancamento(UUID referencia);
+
+    /** Desfaz a exclusão pela referência; sem nenhum lançamento com ela → {@code LANCAMENTO_NAO_ENCONTRADO}. */
+    void restaurarLancamento(UUID referencia);
 }

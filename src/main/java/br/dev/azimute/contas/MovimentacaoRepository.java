@@ -80,6 +80,29 @@ class MovimentacaoRepository {
                 .optional();
     }
 
+    /**
+     * A entrada ou saída lançada por outro módulo com essa referência de ganho ou gasto (RF42 do PRD do fluxo).
+     * A viva vem primeiro; sem viva, a excluída mais recente, que é a que um restaurar traria de volta.
+     */
+    Optional<Registro> buscarPorReferencia(UUID referencia) {
+        return jdbc.sql("SELECT " + COLUNAS + ", deleted_at IS NOT NULL AS excluida FROM contas.movimentacoes "
+                        + "WHERE tipo IN ('ENTRADA', 'SAIDA') AND (ganho_id = :ref OR gasto_id = :ref) "
+                        + "ORDER BY deleted_at IS NULL DESC, deleted_at DESC LIMIT 1")
+                .param("ref", referencia)
+                .query((rs, n) -> new Registro(mapear(rs), rs.getBoolean("excluida")))
+                .optional();
+    }
+
+    /** Muda conta, valor e data no lugar, mantendo o ID (T2 do SPEC do fluxo). Só a viva. */
+    void alterar(Movimentacao m) {
+        var campos = Campos.de(m);
+        jdbc.sql("UPDATE contas.movimentacoes SET conta_origem = :origem, conta_destino = :destino, valor = :valor, "
+                        + "data = :data, updated_at = now() WHERE id = :id AND deleted_at IS NULL")
+                .param("id", m.id().valor()).param("origem", campos.origem()).param("destino", campos.destino())
+                .param("valor", m.valor().valor()).param("data", m.data())
+                .update();
+    }
+
     /** Exclusão lógica (RF13): a linha fica, com {@code deleted_at}; {@code updated_at} registra quando (T8). */
     void excluir(MovimentacaoId id) {
         jdbc.sql("UPDATE contas.movimentacoes SET deleted_at = now(), updated_at = now() "
