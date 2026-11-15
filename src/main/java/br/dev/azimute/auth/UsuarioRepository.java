@@ -38,7 +38,7 @@ class UsuarioRepository {
     }
 
     void atualizarSenha(UUID id, String senhaHash) {
-        jdbc.sql("UPDATE auth.usuarios SET senha_hash = :hash WHERE id = :id")
+        jdbc.sql("UPDATE auth.usuarios SET senha_hash = :hash, updated_at = now() WHERE id = :id")
                 .param("hash", senhaHash).param("id", id).update();
     }
 

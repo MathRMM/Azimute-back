@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,10 +65,16 @@ class HistoricoController {
         return SimulacaoResponse.de(servico.anotar(new SimulacaoId(id), lerAnotacao(corpo)));
     }
 
+    /** Exclusão lógica: a simulação some da listagem e da comparação, mas pode ser restaurada (RF41). */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void excluir(@PathVariable UUID id) {
         servico.excluir(new SimulacaoId(id));
+    }
+
+    @PostMapping("/{id}/restaurar")
+    SimulacaoResponse restaurar(@PathVariable UUID id) {
+        return SimulacaoResponse.de(servico.restaurar(new SimulacaoId(id)));
     }
 
     private static Anotacao lerAnotacao(Map<String, Object> corpo) {

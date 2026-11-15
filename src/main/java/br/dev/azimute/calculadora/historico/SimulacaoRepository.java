@@ -23,7 +23,7 @@ class SimulacaoRepository {
     private static final String COLUNAS = """
             id, bem, data, local, instituicao, valor_bem, entrada, parcela, prazo, valor_financiado,
             taxa_mensal, taxa_anual, total_pago, total_juros, observacao, origem, ancora_id, status,
-            calculada_em, sincronizada_em""";
+            calculada_em, created_at""";
 
     private final JdbcClient jdbc;
 
@@ -31,8 +31,9 @@ class SimulacaoRepository {
         this.jdbc = jdbc;
     }
 
+    /** Só as vivas: uma simulação excluída não é encontrada, nem como âncora (RF41). */
     Optional<SimulacaoSalva> buscar(SimulacaoId id) {
-        return jdbc.sql("SELECT " + COLUNAS + " FROM calculadora.simulacoes WHERE id = :id")
+        return jdbc.sql("SELECT " + COLUNAS + " FROM calculadora.simulacoes WHERE id = :id AND deleted_at IS NULL")
                 .param("id", id.valor())
                 .query(SimulacaoRepository::mapear)
                 .optional();
@@ -79,7 +80,9 @@ class SimulacaoRepository {
         if (anotacao.status() != null) sets.add("status = :status");
         if (sets.isEmpty()) return;
 
-        var comando = jdbc.sql("UPDATE calculadora.simulacoes SET " + String.join(", ", sets) + " WHERE id = :id")
+        sets.add("updated_at = now()");
+        var comando = jdbc.sql("UPDATE calculadora.simulacoes SET " + String.join(", ", sets)
+                        + " WHERE id = :id AND deleted_at IS NULL")
                 .param("id", id.valor());
         if (anotacao.alteraObservacao()) comando = comando.param("observacao", anotacao.observacao());
         if (anotacao.status() != null) comando = comando.param("status", anotacao.status().name());
@@ -87,20 +90,39 @@ class SimulacaoRepository {
     }
 
     List<String> estimativasAncoradasEm(SimulacaoId id) {
-        return jdbc.sql("SELECT id FROM calculadora.simulacoes WHERE ancora_id = :id ORDER BY calculada_em")
+        return jdbc.sql("SELECT id FROM calculadora.simulacoes WHERE ancora_id = :id AND deleted_at IS NULL "
+                        + "ORDER BY calculada_em")
                 .param("id", id.valor())
                 .query((rs, linha) -> rs.getObject("id", UUID.class).toString())
                 .list();
     }
 
-    void excluir(SimulacaoId id) {
-        jdbc.sql("DELETE FROM calculadora.simulacoes WHERE id = :id").param("id", id.valor()).update();
+    /**
+     * Exclusão lógica (RF41). O {@code NOT EXISTS} faz a mesma proteção que a FK fazia no {@code DELETE}: uma
+     * âncora com estimativa viva não é excluída, nem se a estimativa foi gravada depois da verificação do serviço.
+     *
+     * @return {@code false} se nada foi excluído (inexistente, já excluída ou âncora de estimativa viva)
+     */
+    boolean excluir(SimulacaoId id) {
+        return jdbc.sql("""
+                        UPDATE calculadora.simulacoes s SET deleted_at = now(), updated_at = now()
+                        WHERE s.id = :id AND s.deleted_at IS NULL
+                          AND NOT EXISTS (SELECT 1 FROM calculadora.simulacoes e
+                                          WHERE e.ancora_id = s.id AND e.deleted_at IS NULL)""")
+                .param("id", id.valor()).update() == 1;
+    }
+
+    /** Desfaz a exclusão lógica. @return {@code false} se não havia o que restaurar */
+    boolean restaurar(SimulacaoId id) {
+        return jdbc.sql("UPDATE calculadora.simulacoes SET deleted_at = NULL, updated_at = now() "
+                        + "WHERE id = :id AND deleted_at IS NOT NULL")
+                .param("id", id.valor()).update() == 1;
     }
 
     /** Ordem: data mais recente primeiro. Filtro por bem ignora maiúsculas e espaços nas pontas. */
     List<SimulacaoSalva> listar(String bem) {
-        var sql = "SELECT " + COLUNAS + " FROM calculadora.simulacoes"
-                + (bem == null ? "" : " WHERE lower(btrim(bem)) = lower(btrim(:bem))")
+        var sql = "SELECT " + COLUNAS + " FROM calculadora.simulacoes WHERE deleted_at IS NULL"
+                + (bem == null ? "" : " AND lower(btrim(bem)) = lower(btrim(:bem))")
                 + " ORDER BY data DESC, calculada_em DESC, id";
         var consulta = jdbc.sql(sql);
         if (bem != null) {
@@ -133,7 +155,8 @@ class SimulacaoRepository {
                 new SimulacaoId(rs.getObject("id", UUID.class)),
                 dados,
                 StatusSimulacao.valueOf(rs.getString("status")),
-                instante(rs.getTimestamp("sincronizada_em")));
+                // created_at é o antigo sincronizada_em: o instante em que o servidor gravou (RF40).
+                instante(rs.getTimestamp("created_at")));
     }
 
     private static java.time.Instant instante(Timestamp timestamp) {

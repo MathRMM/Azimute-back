@@ -116,13 +116,13 @@ class HistoricoGravacaoIT {
     }
 
     @Test
-    void calculada_em_vem_do_cliente_e_sincronizada_em_do_servidor() throws Exception {
+    void calculada_em_vem_do_cliente_e_created_at_do_servidor() throws Exception {
         var id = UUID.randomUUID();
         salvar(id, proposta()).andExpect(status().isOk());
 
         var linha = jdbc.sql("""
                         SELECT calculada_em = TIMESTAMPTZ '2026-09-12T15:42:10-03:00' AS preservada,
-                               sincronizada_em > now() - INTERVAL '1 minute' AS recente
+                               created_at > now() - INTERVAL '1 minute' AS recente
                         FROM calculadora.simulacoes WHERE id = :id""")
                 .param("id", id).query().singleRow();
         assertThat(linha).containsEntry("preservada", true).containsEntry("recente", true);
