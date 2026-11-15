@@ -45,7 +45,7 @@ class ConsolidadoIT {
     @BeforeEach
     void preparar() throws Exception {
         mvc = ClienteDeTeste.autenticado(contexto, jdbc);
-        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas").update();
+        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas CASCADE").update();
         nubank = criar("Nubank", "CORRENTE", "GIRO", "2300", "1000");
         cdb = criar("CDB Liquidez", "INVESTIMENTO", "RESERVA", "9000", null);
     }

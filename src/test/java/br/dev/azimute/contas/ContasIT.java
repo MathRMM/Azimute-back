@@ -45,8 +45,9 @@ class ContasIT {
     @BeforeEach
     void limpar() {
         mvc = ClienteDeTeste.autenticado(contexto, jdbc);
-        // TRUNCATE não dispara o trigger de linha que protege as conciliações.
-        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas").update();
+        // TRUNCATE não dispara o trigger de linha que protege as conciliações. CASCADE: as tabelas do fluxo
+        // apontam para contas.contas.
+        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas CASCADE").update();
     }
 
     @Test

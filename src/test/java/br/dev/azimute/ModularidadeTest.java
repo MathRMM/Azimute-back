@@ -65,6 +65,21 @@ class ModularidadeTest {
     }
 
     @Test
+    void api_publica_de_fluxo_e_so_o_que_os_outros_modulos_usam() {
+        var classes = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("br.dev.azimute.fluxo");
+
+        // Só o pacote base é API do módulo; o subpacote folha é interno para o Spring Modulith (T1 do SPEC do fluxo).
+        // A lista cresce a cada fase do SPEC até FluxoFacade, ResumoMes, RegistrarGasto e os eventos.
+        assertThat(classes.stream()
+                .filter(c -> c.getPackageName().equals("br.dev.azimute.fluxo"))
+                .filter(c -> c.isTopLevelClass() && c.getModifiers().contains(JavaModifier.PUBLIC))
+                .map(JavaClass::getSimpleName))
+                .containsExactlyInAnyOrder("GastoId", "GanhoId", "CategoriaId");
+    }
+
+    @Test
     void todos_os_modulos_do_roadmap_existem() {
         assertThat(modulos.stream().map(m -> m.getIdentifier().toString()))
                 .contains("comum", "plataforma", "calculadora", "auth",

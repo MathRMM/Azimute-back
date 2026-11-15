@@ -36,7 +36,7 @@ class ContasFacadeLancamentosIT {
 
     @BeforeEach
     void preparar() {
-        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas").update();
+        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas CASCADE").update();
         nubank = criar("Nubank", TipoConta.CORRENTE);
         inter = criar("Inter", TipoConta.CORRENTE);
     }
