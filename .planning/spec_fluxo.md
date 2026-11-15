@@ -294,26 +294,26 @@ backend-azimute-core/
 - Gasto em folha (RF15): a categoria pode ser trocada pela API de gastos (Fase 3) e a reaplicação dos efeitos preserva a escolha.
 
 **Testes (TDD):**
-- [ ] Conferência → holerite do exemplo (valores fictícios do PRD) passa; vencimentos somando diferente do total → falha apontando "vencimentos"; líquido errado → falha apontando "líquido"
-- [ ] Datas → competência 2026-10: adiantamento 15/10 (quinta), líquido 30/10 (31 é sábado); competência com dia 15 num domingo → sexta 13
-- [ ] Efeitos → básica 50, voluntária 250, contrapartida 50 → três lançamentos de previdência (50, 50, 250); vale-transporte 300 → gasto em folha de 300 em Transporte; FGTS 400 → um lançamento
-- [ ] Efeitos → mesmas entradas produzem as mesmas referências (T6)
-- [ ] Serviço → regra de 100% até 2026-12 e de 50% a partir de 2027-01: holerite de 2026-12 grava contrapartida = básica; de 2027-01 grava a metade; incluir a regra nova não muda o de 2026-12 (RN19, T7)
-- [ ] Serviço → corrigir a contrapartida de um holerite ajusta só a entrada daquele holerite (RF35b)
-- [ ] API → importar o holerite manual cria o ganho com dois recebimentos, FGTS, previdência separada e o gasto em folha; os saldos das contas salário, FGTS e previdência e o `bloqueado` do consolidado batem (fluxo principal A do PRD)
-- [ ] API → totais inconsistentes → 422 e nada gravado (RN10); sem configuração → 422
-- [ ] API → reenvio idêntico → 200; outro holerite na mesma competência → 409; reenvio de um holerite excluído → 409
-- [ ] API → adiantamento lançado antes é associado sem duplicar; com valor diferente, a entrada é ajustada ao valor do holerite (RF34)
-- [ ] API → rubrica desconhecida entra "a classificar" e é avisada; reclassificar como `GASTO`/Saúde cria o gasto em folha; reclassificar de volta remove (RN13)
-- [ ] API → excluir o holerite tira tudo dos saldos e solta o adiantamento antecipado; restaurar devolve tudo (RF38)
-- [ ] API → ganho do holerite não pode ser editado pela API de ganhos (RN15)
-- [ ] Caso de borda: holerite sem adiantamento → um recebimento só; mês sem IRRF → imposto = INSS
-- [ ] Caso de borda: configuração apontando conta de tipo errado → 422
+- [x] Conferência → holerite do exemplo (valores fictícios do PRD) passa; vencimentos somando diferente do total → falha apontando "vencimentos"; líquido errado → falha apontando "líquido"
+- [x] Datas → competência 2026-10: adiantamento 15/10 (quinta), líquido 30/10 (31 é sábado); competência com dia 15 num domingo → sexta 13
+- [x] Efeitos → básica 50, voluntária 250, contrapartida 50 → três lançamentos de previdência (50, 50, 250); vale-transporte 300 → gasto em folha de 300 em Transporte; FGTS 400 → um lançamento
+- [x] Efeitos → mesmas entradas produzem as mesmas referências (T6)
+- [x] Serviço → regra de 100% até 2026-12 e de 50% a partir de 2027-01: holerite de 2026-12 grava contrapartida = básica; de 2027-01 grava a metade; incluir a regra nova não muda o de 2026-12 (RN19, T7)
+- [x] Serviço → corrigir a contrapartida de um holerite ajusta só a entrada daquele holerite (RF35b)
+- [x] API → importar o holerite manual cria o ganho com dois recebimentos, FGTS, previdência separada e o gasto em folha; os saldos das contas salário, FGTS e previdência e o `bloqueado` do consolidado batem (fluxo principal A do PRD)
+- [x] API → totais inconsistentes → 422 e nada gravado (RN10); sem configuração → 422
+- [x] API → reenvio idêntico → 200; outro holerite na mesma competência → 409; reenvio de um holerite excluído → 409
+- [x] API → adiantamento lançado antes é associado sem duplicar; com valor diferente, a entrada é ajustada ao valor do holerite (RF34)
+- [x] API → rubrica desconhecida entra "a classificar" e é avisada; reclassificar como `GASTO`/Saúde cria o gasto em folha; reclassificar de volta remove (RN13)
+- [x] API → excluir o holerite tira tudo dos saldos e solta o adiantamento antecipado; restaurar devolve tudo (RF38)
+- [x] API → ganho do holerite não pode ser editado pela API de ganhos (RN15)
+- [x] Caso de borda: holerite sem adiantamento → um recebimento só; mês sem IRRF → imposto = INSS
+- [x] Caso de borda: configuração apontando conta de tipo errado → 422
 
 **Checklist de validação:**
-- [ ] RF15, RF30, RF32–RF36, RF35a, RF35b, RF38, RN04, RN10–RN15, RN18, RN19, P1–P4 atendidos
-- [ ] Alvo `make holerite-manual` (envia um JSON de arquivo) testado rodando o `make`
-- [ ] Testes desta fase e das anteriores passando; gate de 90% passando
+- [x] RF15, RF30, RF32–RF36, RF35a, RF35b, RF38, RN04, RN10–RN15, RN18, RN19, P1–P4 atendidos
+- [x] Alvo `make holerite-manual` (envia um JSON de arquivo) testado rodando o `make`
+- [x] Testes desta fase e das anteriores passando; gate de 90% passando
 
 **Critério de avanço:** checklist completo → Fase 6.
 
@@ -593,7 +593,7 @@ public interface ContasFacade {
 | DELETE / POST restaurar | `/api/folha/holerites/{id}` | 204 / 200 | 404 |
 | PATCH | `/api/folha/holerites/{id}/previdencia` | 200 | 404, 422 |
 | PUT | `/api/folha/adiantamentos/{id}` | 201 / 200 | 409, 422 |
-| GET / PATCH | `/api/folha/rubricas`, `/{codigo}` | 200 | 404, 422 |
+| GET / PATCH | `/api/folha/rubricas`, `?codigo=` (v1.2) | 200 | 404, 422 |
 | GET / POST | `/api/folha/contrapartida` | 200 / 201 | 409 vigência repetida, 422 |
 | GET | `/api/folha/resumo?ano=` | 200 | 422 |
 | GET | `/api/fluxo/resumo?competencia=` | 200 | 422 |
@@ -668,3 +668,4 @@ Todos: 401 sem token (SEC01).
 |--------|------------|----------------------------|
 | 1.0 | 2026-11-14 | Criação inicial: 7 fases aprovadas; decisões técnicas T1–T15; PDFBox 3.0.8 como dependência nova (Fase 6) |
 | 1.1 | 2026-11-15 | Aprovado pelo usuário |
+| 1.2 | 2026-11-15 | Ajustes da Fase 5, sem mudar regra de negócio: (a) a reclassificação de rubrica recebe o código em `?codigo=`, não no caminho, porque códigos como `/507` têm barra e barra codificada no caminho é recusada pelo servidor; (b) `percentualDaBasica` da API em pontos percentuais (100 = mesmo valor da básica), guardado como fração no banco; (c) na reaplicação dos efeitos, o gasto em folha vivo mantém a categoria que tem, porque ela pode ter sido trocada pela API de gastos (RF15); a categoria do catálogo vale para o gasto criado ou que volta da exclusão; (d) `HoleriteServiceTest` virou testes das funções puras (`RegraContrapartida`, `EfeitosDoHolerite`) mais os cenários de serviço em `HoleriteManualIT`, contra o banco real |
