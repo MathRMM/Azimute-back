@@ -1,5 +1,6 @@
 package br.dev.azimute.fluxo.folha;
 
+import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContasFacade;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,9 @@ class HoleriteService {
     /** O holerite e se este envio o criou (201) ou é um reenvio (200). */
     record Resultado(Detalhe detalhe, boolean criado) {}
 
+    /** O PDF original e a competência, para nomear o arquivo baixado (RF37). */
+    record Arquivo(Competencia competencia, byte[] conteudo) {}
+
     private final HoleriteRepository holerites;
     private final CatalogoRepository catalogo;
     private final EfeitosRepository efeitos;
@@ -47,10 +51,12 @@ class HoleriteService {
     private final ConfiguracaoFolhaService configuracao;
     private final ContrapartidaService contrapartidas;
     private final ContasFacade contas;
+    private final LeitorDeHolerite leitor;
 
     HoleriteService(HoleriteRepository holerites, CatalogoRepository catalogo, EfeitosRepository efeitos,
                     AdiantamentoRepository adiantamentos, ConfiguracaoFolhaService configuracao,
-                    ContrapartidaService contrapartidas, ContasFacade contas) {
+                    ContrapartidaService contrapartidas, ContasFacade contas, LeitorDeHolerite leitor) {
+        this.leitor = leitor;
         this.holerites = holerites;
         this.catalogo = catalogo;
         this.efeitos = efeitos;
@@ -65,6 +71,35 @@ class HoleriteService {
     Resultado importarManual(HoleriteLido lido, LocalDate dataAdiantamento, LocalDate dataLiquido) {
         return importar(lido, dataAdiantamento, dataLiquido, Holerite.Origem.MANUAL,
                 hash(canonico(lido, dataAdiantamento, dataLiquido)));
+    }
+
+    /**
+     * RF31: lê o PDF e segue o mesmo caminho do manual. O hash é o do arquivo (T9); o PDF é guardado à parte (T8).
+     * As datas informadas não entram no hash: o mesmo PDF reenviado é o mesmo holerite.
+     */
+    @Transactional
+    Resultado importarPdf(byte[] pdf, LocalDate dataAdiantamento, LocalDate dataLiquido) {
+        var resultado = importar(leitor.ler(pdf), dataAdiantamento, dataLiquido, Holerite.Origem.PDF, hash(pdf));
+        if (resultado.criado()) {
+            holerites.salvarArquivo(resultado.detalhe().holerite().id(), pdf);
+        }
+        return resultado;
+    }
+
+    /** RF37: um holerite vivo, com as rubricas. */
+    Detalhe buscar(HoleriteId id) {
+        return detalhe(vivo(id));
+    }
+
+    List<Holerite> listar(int ano) {
+        return holerites.listar(ano);
+    }
+
+    /** RF37: o PDF original; holerite lançado à mão não tem. */
+    Arquivo pdf(HoleriteId id) {
+        var holerite = vivo(id);
+        return holerites.arquivo(id).map(conteudo -> new Arquivo(holerite.competencia(), conteudo))
+                .orElseThrow(() -> new PdfNaoEncontradoException(id));
     }
 
     /**

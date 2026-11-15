@@ -13,8 +13,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -27,8 +34,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -49,6 +58,8 @@ class FolhaController {
     private static final String MES = "\\d{4}-(0[1-9]|1[0-2])";
     private static final String FORMATO_MES = "deve estar no formato AAAA-MM";
     private static final BigDecimal CEM = BigDecimal.valueOf(100);
+    static final long LIMITE_DO_PDF = 2L * 1024 * 1024;
+    private static final byte[] ASSINATURA = "%PDF-".getBytes(StandardCharsets.US_ASCII);
 
     record ConfiguracaoRequest(@NotNull UUID contaSalario, @NotNull UUID contaFgts, @NotNull UUID contaPrevidencia) {}
 
@@ -145,6 +156,15 @@ class FolhaController {
         }
     }
 
+    record HoleriteResumoResponse(UUID id, Competencia competencia, String origem, Dinheiro totalVencimentos,
+                                  Dinheiro totalDescontos, Dinheiro liquido, LocalDate dataAdiantamento,
+                                  LocalDate dataLiquido) {
+        static HoleriteResumoResponse de(Holerite h) {
+            return new HoleriteResumoResponse(h.id().valor(), h.competencia(), h.origem().name(),
+                    h.totalVencimentos(), h.totalDescontos(), h.liquido(), h.dataAdiantamento(), h.dataLiquido());
+        }
+    }
+
     record AdiantamentoRequest(
             @NotNull @Pattern(regexp = MES, message = FORMATO_MES) String competencia,
             @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal valor,
@@ -198,6 +218,50 @@ class FolhaController {
         return ConfiguracaoResponse.de(configuracao.configurar(new ConfiguracaoFolha(
                 new ContaId(corpo.contaSalario()), new ContaId(corpo.contaFgts()),
                 new ContaId(corpo.contaPrevidencia()))));
+    }
+
+    /**
+     * RF31: o PDF do holerite. Assinatura {@code %PDF-} e limite de 2 MB conferidos aqui (SEC04, T12); o limite do
+     * {@code multipart} no servidor barra antes os arquivos maiores, com o mesmo 413.
+     */
+    @PostMapping(path = "/holerites", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<HoleriteResponse> importarPdf(
+            @RequestPart MultipartFile arquivo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataAdiantamento,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataLiquido)
+            throws IOException {
+        if (arquivo.getSize() > LIMITE_DO_PDF) {
+            throw new MaxUploadSizeExceededException(LIMITE_DO_PDF);
+        }
+        var conteudo = arquivo.getBytes();
+        if (!Arrays.equals(conteudo, 0, Math.min(conteudo.length, ASSINATURA.length), ASSINATURA, 0,
+                ASSINATURA.length)) {
+            throw new ArquivoNaoEPdfException();
+        }
+        var resultado = holerites.importarPdf(conteudo, dataAdiantamento, dataLiquido);
+        return ResponseEntity.status(resultado.criado() ? HttpStatus.CREATED : HttpStatus.OK)
+                .body(HoleriteResponse.de(resultado.detalhe()));
+    }
+
+    /** RF37: os holerites vivos do ano, sem as rubricas. */
+    @GetMapping("/holerites")
+    List<HoleriteResumoResponse> listar(@RequestParam int ano) {
+        return holerites.listar(ano).stream().map(HoleriteResumoResponse::de).toList();
+    }
+
+    @GetMapping("/holerites/{id}")
+    HoleriteResponse buscar(@PathVariable UUID id) {
+        return HoleriteResponse.de(holerites.buscar(new HoleriteId(id)));
+    }
+
+    /** RF37, SEC05: o PDF original, só com token. */
+    @GetMapping("/holerites/{id}/pdf")
+    ResponseEntity<byte[]> pdf(@PathVariable UUID id) {
+        var arquivo = holerites.pdf(new HoleriteId(id));
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("holerite-" + arquivo.competencia() + ".pdf").build().toString())
+                .body(arquivo.conteudo());
     }
 
     /** 201 no primeiro envio; 200 no reenvio do mesmo conteúdo (RN11). */
