@@ -3,6 +3,7 @@ package br.dev.azimute.fluxo;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 
 import java.util.Objects;
 

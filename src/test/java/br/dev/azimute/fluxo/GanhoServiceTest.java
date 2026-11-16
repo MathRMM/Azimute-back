@@ -5,7 +5,9 @@ import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.contas.ContasFacade;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -207,7 +209,7 @@ class GanhoServiceTest {
     }
 
     private Recebimento recebimento(String valor, ContaId conta, LocalDate data) {
-        return new Recebimento(new RecebimentoId(id.valor()), id, OUTUBRO, Recebimento.Papel.AVULSO, Dinheiro.de(valor), data, conta,
+        return new Recebimento(new RecebimentoId(id.valor()), id, OUTUBRO, PapelDeRecebimento.AVULSO, Dinheiro.de(valor), data, conta,
                 false);
     }
 

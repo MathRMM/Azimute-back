@@ -4,6 +4,8 @@ import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -62,18 +64,18 @@ class GanhosController {
         }
     }
 
-    record RecebimentoResponse(UUID id, String papel, Dinheiro valor, LocalDate data, UUID conta) {
+    record RecebimentoResponse(UUID id, PapelDeRecebimento papel, Dinheiro valor, LocalDate data, UUID conta) {
         static RecebimentoResponse de(Recebimento r) {
-            return new RecebimentoResponse(r.id().valor(), r.papel().name(), r.valor(), r.data(), r.conta().valor());
+            return new RecebimentoResponse(r.id().valor(), r.papel(), r.valor(), r.data(), r.conta().valor());
         }
     }
 
     /** Bruto, líquido, tipo e recebimentos (RF23). {@code holerite} só no ganho que nasceu dele. */
-    record GanhoResponse(UUID id, Competencia competencia, String descricao, String tipo, Dinheiro bruto,
+    record GanhoResponse(UUID id, Competencia competencia, String descricao, TipoGanho tipo, Dinheiro bruto,
                          Dinheiro liquido, UUID holerite, List<RecebimentoResponse> recebimentos) {
         static GanhoResponse de(GanhoComRecebimentos item) {
             var g = item.ganho();
-            return new GanhoResponse(g.id().valor(), g.competencia(), g.descricao(), g.tipo().name(), g.bruto(),
+            return new GanhoResponse(g.id().valor(), g.competencia(), g.descricao(), g.tipo(), g.bruto(),
                     g.liquido(), g.holerite() == null ? null : g.holerite().valor(),
                     item.recebimentos().stream().map(RecebimentoResponse::de).toList());
         }

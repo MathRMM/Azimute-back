@@ -18,7 +18,7 @@ public class TabelaDeRecebimentos {
      * Um recebimento a gravar. Sem ganho só o adiantamento lançado antes do holerite ({@code lancadoAntes}), que o
      * holerite associa depois (RF34).
      */
-    public record Linha(RecebimentoId id, GanhoId ganho, Competencia competencia, String papel, Dinheiro valor, LocalDate data,
+    public record Linha(RecebimentoId id, GanhoId ganho, Competencia competencia, PapelDeRecebimento papel, Dinheiro valor, LocalDate data,
                         ContaId conta, boolean lancadoAntes) {
 
         public Linha {
@@ -38,7 +38,7 @@ public class TabelaDeRecebimentos {
                                                         lancado_antes)
                         VALUES (:id, :ganho, :competencia, :papel, :valor, :data, :conta, :antes)""")
                 .param("id", r.id().valor()).param("ganho", r.ganho() == null ? null : r.ganho().valor()).param("competencia", r.competencia().primeiroDia())
-                .param("papel", r.papel()).param("valor", r.valor().valor()).param("data", r.data())
+                .param("papel", r.papel().name()).param("valor", r.valor().valor()).param("data", r.data())
                 .param("conta", r.conta().valor()).param("antes", r.lancadoAntes())
                 .update();
     }

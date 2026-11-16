@@ -2,6 +2,7 @@ package br.dev.azimute.fluxo;
 
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.FormaDeGasto;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -31,8 +32,8 @@ class FormaPagamentoTest {
 
     @Test
     void codigo_e_o_gravado_no_banco() {
-        assertThat(new FormaPagamento.AVista(CONTA).codigo()).isEqualTo("A_VISTA");
-        assertThat(new FormaPagamento.DescontoEmFolha(HOLERITE).codigo()).isEqualTo("DESCONTO_EM_FOLHA");
+        assertThat(new FormaPagamento.AVista(CONTA).codigo()).isEqualTo(FormaDeGasto.A_VISTA);
+        assertThat(new FormaPagamento.DescontoEmFolha(HOLERITE).codigo()).isEqualTo(FormaDeGasto.DESCONTO_EM_FOLHA);
     }
 
     @Test

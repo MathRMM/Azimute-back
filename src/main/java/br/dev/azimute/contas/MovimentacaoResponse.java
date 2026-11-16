@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /** Movimentação como a API devolve. Campos que não se aplicam ao tipo ficam nulos. */
-record MovimentacaoResponse(UUID id, String tipo, UUID origem, UUID destino, Dinheiro valor, LocalDate data,
+record MovimentacaoResponse(UUID id, TipoMovimentacao tipo, UUID origem, UUID destino, Dinheiro valor, LocalDate data,
                             String motivo) {
 
     static MovimentacaoResponse de(Movimentacao m) {

@@ -4,6 +4,7 @@ import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
+import br.dev.azimute.fluxo.tabelas.FormaDeGasto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -53,7 +54,7 @@ class GastosController {
 
     /** Com o nome da categoria e a forma de pagamento (RF13). {@code conta} só no à vista; {@code holerite}, em folha. */
     record GastoResponse(UUID id, LocalDate data, String descricao, Dinheiro valor, UUID categoria,
-                         String categoriaNome, String forma, UUID conta, UUID holerite) {
+                         String categoriaNome, FormaDeGasto forma, UUID conta, UUID holerite) {
 
         static GastoResponse de(GastoComCategoria item) {
             var g = item.gasto();

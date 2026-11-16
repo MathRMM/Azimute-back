@@ -3,6 +3,7 @@ package br.dev.azimute.fluxo;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 
 import java.time.LocalDate;
 
