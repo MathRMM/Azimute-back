@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +45,24 @@ class CompetenciaTest {
     void ida_e_volta_no_formato_da_api() {
         assertThat(Competencia.de("2026-09").toString()).isEqualTo("2026-09");
         assertThat(Competencia.de("2026-09").mes()).isEqualTo(YearMonth.of(2026, 9));
+    }
+
+    @Test
+    void ida_e_volta_com_a_data_do_banco() {
+        var competencia = Competencia.de("2026-02");
+        assertThat(competencia.primeiroDia()).isEqualTo(LocalDate.of(2026, 2, 1));
+        assertThat(Competencia.doDia(competencia.primeiroDia())).isEqualTo(competencia);
+    }
+
+    @Test
+    void qualquer_dia_do_mes_cai_na_mesma_competencia() {
+        assertThat(Competencia.doDia(LocalDate.of(2024, 2, 29))).isEqualTo(Competencia.de("2024-02"));
+        assertThat(Competencia.doDia(LocalDate.of(2026, 12, 31))).isEqualTo(Competencia.de("2026-12"));
+    }
+
+    @Test
+    void dia_nulo_e_rejeitado() {
+        assertThatThrownBy(() -> Competencia.doDia(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

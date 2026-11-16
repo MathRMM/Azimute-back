@@ -2,6 +2,7 @@ package br.dev.azimute.fluxo.folha;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Taxa;
 import br.dev.azimute.fluxo.CategoriaId;
 import org.junit.jupiter.api.Test;
 
@@ -68,28 +69,26 @@ class ModeloDaFolhaTest {
     }
 
     @Test
-    void regra_de_contrapartida_nao_aceita_percentual_negativo() {
-        assertThat(new RegraContrapartida(Competencia.de("2000-01"), BigDecimal.ONE).percentualDaBasica())
-                .isEqualByComparingTo("1");
-        assertThatCode(() -> new RegraContrapartida(NOVEMBRO, BigDecimal.ZERO)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> new RegraContrapartida(NOVEMBRO, new BigDecimal("-0.01")))
-                .isInstanceOf(IllegalArgumentException.class);
+    void regra_de_contrapartida_exige_competencia_e_taxa() {
+        assertThat(new RegraContrapartida(Competencia.de("2000-01"), Taxa.dePontos("100")).percentualDaBasica()
+                .fracao()).isEqualByComparingTo("1");
+        assertThatCode(() -> new RegraContrapartida(NOVEMBRO, Taxa.ZERO)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> new RegraContrapartida(NOVEMBRO, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RegraContrapartida(null, Taxa.ZERO)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void regra_vigente_e_a_de_maior_inicio_ate_a_competencia_e_a_contrapartida_arredonda() {
-        var regras = List.of(new RegraContrapartida(Competencia.de("2000-01"), BigDecimal.ONE),
-                new RegraContrapartida(Competencia.de("2027-01"), new BigDecimal("0.5")));
+        var regras = List.of(new RegraContrapartida(Competencia.de("2000-01"), Taxa.dePontos("100")),
+                new RegraContrapartida(Competencia.de("2027-01"), Taxa.dePontos("50")));
 
         assertThat(RegraContrapartida.vigente(regras, Competencia.de("2026-12")).percentualDaBasica())
-                .isEqualByComparingTo("1");
+                .isEqualTo(Taxa.dePontos("100"));
         assertThat(RegraContrapartida.vigente(regras, Competencia.de("2027-01")).percentualDaBasica())
-                .isEqualByComparingTo("0.5");
-        assertThat(RegraContrapartida.vigente(List.of(), NOVEMBRO).percentualDaBasica()).isZero();
-        assertThat(new RegraContrapartida(NOVEMBRO, new BigDecimal("0.5")).contrapartida(Dinheiro.de("50.05")))
+                .isEqualTo(Taxa.dePontos("50"));
+        assertThat(RegraContrapartida.vigente(List.of(), NOVEMBRO).percentualDaBasica()).isEqualTo(Taxa.ZERO);
+        assertThat(new RegraContrapartida(NOVEMBRO, Taxa.dePontos("50")).contrapartida(Dinheiro.de("50.05")))
                 .isEqualTo(Dinheiro.de("25.02"));
-        assertThat(new RegraContrapartida(NOVEMBRO, new BigDecimal("0.5")).percentual())
-                .isEqualByComparingTo("50");
     }
 
     @Test

@@ -56,7 +56,7 @@ public class TabelaDeGanhos {
     }
 
     private static JdbcClient.StatementSpec parametros(JdbcClient.StatementSpec sql, Linha g) {
-        return sql.param("id", g.id()).param("competencia", g.competencia().mes().atDay(1))
+        return sql.param("id", g.id()).param("competencia", g.competencia().primeiroDia())
                 .param("descricao", g.descricao()).param("tipo", g.tipo())
                 .param("bruto", g.bruto().valor()).param("liquido", g.liquido().valor())
                 .param("holerite", g.holerite() == null ? null : g.holerite().valor());

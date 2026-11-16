@@ -139,11 +139,18 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - **`Percentual`:** não muda.
 
 **Testes:**
-- [ ] `Taxa`: pontos e fração em todos os formatos (`"3.51"`, `"3,51"` recusado, `"0"`, negativo, mais de 8 casas, nulo); propriedade jqwik de que a ida e volta entre pontos e fração não perde valor.
-- [ ] Dinheiro exato: `"10"`, `"10.5"`, `"10.50"` aceitos; `"10.505"`, `"abc"`, `" "` recusados.
-- [ ] `Competencia`: ida e volta com `LocalDate`.
+- [x] `Taxa`: pontos e fração em todos os formatos (`"3.51"`, `"3,51"` recusado, `"0"`, negativo, mais de 8 casas, nulo); propriedade jqwik de que a ida e volta entre pontos e fração não perde valor. (`TaxaTest`)
+- [x] Dinheiro exato (`Dinheiro.exato`): `"10"`, `"10.5"`, `"10.50"` aceitos; `"10.505"`, `"abc"`, `" "` recusados. (`DinheiroTest`)
+- [x] `Competencia`: ida e volta com `LocalDate`. (`CompetenciaTest`)
 
-**Checklist:** JSON da Fase 1 inalterado; a fração da contrapartida no banco é igual à de antes.
+**Como ficou (desvios do plano):**
+- **Histórico continua com `BigDecimal`** em `taxaMensal` e `taxaAnual`. O `DadosSimulacao` é o snapshot como o cliente mandou, e o `HistoricoService` acumula todos os erros de campo de uma vez (inclusive taxa negativa). Uma `Taxa` recusaria a negativa no construtor e quebraria esse acúmulo. A conferência continua usando o `TaxaMensal` do core. Entra na lista de exceções da regra de `BigDecimal` da Fase 6.
+- **`TaxaMensal` sem conversão para `Taxa`** por enquanto: sem o histórico, ninguém usaria. Entra quando houver o primeiro uso.
+- **Usam `Taxa`:** `RegraContrapartida`, o repositório dela e o `FolhaController` (POST e resposta da regra).
+- **Usam `Dinheiro.exato`:** os leitores de valor dos PATCH de contas, gastos, ganhos e da contrapartida do holerite.
+- **`Competencia.primeiroDia()` e `doDia(...)`:** em todos os repositórios e tabelas; o `dia1` do `GanhoRepository` saiu.
+
+**Checklist:** [x] JSON da Fase 1 inalterado; [x] a fração da contrapartida no banco é igual à de antes (`CatalogoIT`); [x] `make test` com 697 testes, 0 falhas, gate do JaCoCo verde.
 
 ### Fase 3 — IDs
 
@@ -193,7 +200,7 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - **Mensagens:** as de hoje, campo a campo, como fixado na Fase 1.
 - **Divergência do ID:** passa a exigir texto em todos os controllers. Não muda nada na prática, porque número JSON nunca forma um UUID válido.
 - **`@ValorMonetario`:** anotação composta em `plataforma.web` (módulo OPEN), com variantes positivo e não negativo. Substitui as 19 ocorrências de `@Digits(integer = 17, fraction = 2)`.
-- [PENDENTE: A11 — decidir com o usuário antes da Fase 5 se as mensagens do Bean Validation passam para português. Isso muda o texto das respostas de erro: os testes fixados na Fase 1 seriam atualizados de propósito, e o app precisa conferir se depende de algum texto.]
+- **A11, decidido:** as mensagens do Bean Validation passam para português, no mesmo tom das checadas à mão. O app ainda não existe e vai nascer do Swagger, então nada depende do texto em inglês. Os testes fixados na Fase 1 mudam de propósito, só nas mensagens em inglês.
 - [PENDENTE: A10 — confirmar se `Instant` no domínio e `OffsetDateTime` na API é uma convenção ou uma mistura. Se for convenção, documentar e centralizar a conversão de `Timestamp`; se não for, definir a regra antes de mexer.]
 
 **Testes:**
@@ -208,7 +215,7 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - [ ] Todo record `*Id` implementa `Identificador`.
 - [ ] Nenhuma classe de produção chama `UUID.randomUUID()`, exceto o `DispositivoService` (hash fictício).
 - [ ] Nenhuma classe se chama `*Builder`, e nenhum record tem setter.
-- [ ] `BigDecimal` não aparece em record de domínio, fora de uma lista explícita: Requests de entrada, o core de juros e o `RubricaLida.referencia`.
+- [ ] `BigDecimal` não aparece em record de domínio, fora de uma lista explícita: Requests de entrada, o core de juros, o `RubricaLida.referencia` e as taxas do `DadosSimulacao` (snapshot validado com acúmulo de erros).
 - [ ] Controllers não declaram `Set<String>` de campos editáveis (usam `CamposEditaveis`).
 
 **Documentação:** seção "Convenções de valores e modelos" no `00-arquitetura.md`, cobrindo:
@@ -251,6 +258,8 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 | IDs de entidade | Ficam no módulo dono; só o contrato vai para `comum` | `comum` não pode conhecer o domínio dos módulos |
 | Builders | Não adotar | Records validados no construtor e fábricas nomeadas; builder permite objeto pela metade |
 | UUID gerado no servidor | v7 (banco ou `Uuid7`) | Ordenável por criação, não fragmenta índice (doc 00) |
+| Idioma das mensagens de validação (A11) | Português em todas | O app nasce do Swagger; um idioma só facilita |
+| Taxas do histórico | Continuam `BigDecimal` | O snapshot aceita negativa para acumular o erro junto com os outros campos |
 
 ---
 
@@ -259,3 +268,4 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 | Versão | Data | Alteração |
 |--------|------|-----------|
 | 1.0 | 2026-11-16 | Criação inicial, com a opção A para percentual e o levantamento de UUID |
+| 1.1 | 2026-11-16 | Fase 1 concluída; A11 decidido (português); Fase 2 concluída, com os desvios do histórico e do `TaxaMensal` |

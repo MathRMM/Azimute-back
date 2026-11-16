@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -117,11 +116,11 @@ class ContasController {
             return null;
         }
         try {
-            var decimal = new BigDecimal(valor.toString().strip());
-            if (decimal.signum() >= 0 && decimal.stripTrailingZeros().scale() <= 2) {
-                return new Dinheiro(decimal);
+            var dinheiro = Dinheiro.exato(valor.toString());
+            if (!dinheiro.negativo()) {
+                return dinheiro;
             }
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             // segue para o erro de campo abaixo
         }
         erros.put("limiteChequeEspecial", "deve ser um valor não negativo com até 2 casas decimais");

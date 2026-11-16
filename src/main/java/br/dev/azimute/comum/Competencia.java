@@ -1,5 +1,6 @@
 package br.dev.azimute.comum;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -36,6 +37,16 @@ public record Competencia(YearMonth mes) implements Comparable<Competencia> {
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Competência inválida (" + FORMATO + "): " + texto, e);
         }
+    }
+
+    /** A competência do mês de uma data; no banco, a coluna {@code DATE} com dia 1. */
+    public static Competencia doDia(LocalDate dia) {
+        return new Competencia(YearMonth.from(Objects.requireNonNull(dia, "dia")));
+    }
+
+    /** O dia 1 do mês, como o banco guarda. */
+    public LocalDate primeiroDia() {
+        return mes.atDay(1);
     }
 
     public Competencia proxima() {

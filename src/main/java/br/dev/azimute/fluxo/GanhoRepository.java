@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,7 +68,7 @@ class GanhoRepository {
                         SET competencia = :competencia, descricao = :descricao, tipo = :tipo, bruto = :bruto,
                             liquido = :liquido, updated_at = now()
                         WHERE id = :id AND deleted_at IS NULL""")
-                .param("id", ganho.id().valor()).param("competencia", dia1(ganho.competencia()))
+                .param("id", ganho.id().valor()).param("competencia", ganho.competencia().primeiroDia())
                 .param("descricao", ganho.descricao()).param("tipo", ganho.tipo().name())
                 .param("bruto", ganho.bruto().valor()).param("liquido", ganho.liquido().valor())
                 .update();
@@ -81,7 +80,7 @@ class GanhoRepository {
                         SET competencia = :competencia, valor = :valor, data = :data, conta_id = :conta,
                             updated_at = now()
                         WHERE id = :id AND deleted_at IS NULL""")
-                .param("id", r.id()).param("competencia", dia1(r.competencia())).param("valor", r.valor().valor())
+                .param("id", r.id()).param("competencia", r.competencia().primeiroDia()).param("valor", r.valor().valor())
                 .param("data", r.data()).param("conta", r.conta().valor())
                 .update();
     }
@@ -107,7 +106,7 @@ class GanhoRepository {
                          FROM fluxo.ganhos
                         WHERE competencia = :competencia AND deleted_at IS NULL
                         ORDER BY created_at, id""")
-                .param("competencia", dia1(competencia))
+                .param("competencia", competencia.primeiroDia())
                 .query((rs, n) -> mapearGanho(rs))
                 .list();
         var porGanho = new LinkedHashMap<GanhoId, List<Recebimento>>();
@@ -116,7 +115,7 @@ class GanhoRepository {
                          FROM fluxo.recebimentos r JOIN fluxo.ganhos g ON g.id = r.ganho_id
                         WHERE g.competencia = :competencia AND g.deleted_at IS NULL AND r.deleted_at IS NULL
                         ORDER BY r.data, r.papel""")
-                .param("competencia", dia1(competencia))
+                .param("competencia", competencia.primeiroDia())
                 .query((rs, n) -> mapearRecebimento(rs))
                 .list()
                 .forEach(r -> porGanho.get(r.ganho()).add(r));
@@ -131,12 +130,8 @@ class GanhoRepository {
                 .list();
     }
 
-    private static LocalDate dia1(Competencia competencia) {
-        return competencia.mes().atDay(1);
-    }
-
     private static Competencia competencia(ResultSet rs, String coluna) throws SQLException {
-        return new Competencia(YearMonth.from(rs.getObject(coluna, LocalDate.class)));
+        return Competencia.doDia(rs.getObject(coluna, LocalDate.class));
     }
 
     private static Ganho mapearGanho(ResultSet rs) throws SQLException {

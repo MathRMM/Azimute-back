@@ -180,11 +180,11 @@ class GanhosController {
             return null;
         }
         try {
-            var decimal = new BigDecimal(valor.toString().strip());
-            if (decimal.signum() > 0 && decimal.stripTrailingZeros().scale() <= 2) {
-                return new Dinheiro(decimal);
+            var dinheiro = Dinheiro.exato(valor.toString());
+            if (dinheiro.positivo()) {
+                return dinheiro;
             }
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             // segue para o erro de campo abaixo
         }
         erros.put(campo, "deve ser um valor positivo com até 2 casas decimais");

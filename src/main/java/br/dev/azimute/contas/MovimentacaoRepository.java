@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -152,7 +151,7 @@ class MovimentacaoRepository {
                     rs.getString("motivo"));
             case "PAGAMENTO_FATURA" -> new Movimentacao.PagamentoFatura(id, origem,
                     rs.getObject("cartao_id", UUID.class),
-                    new Competencia(YearMonth.from(rs.getObject("fatura_comp", LocalDate.class))), valor, data);
+                    Competencia.doDia(rs.getObject("fatura_comp", LocalDate.class)), valor, data);
             case "RENDIMENTO" -> new Movimentacao.Rendimento(id, destino, valor, data);
             default -> throw new IllegalStateException("Tipo de movimentação desconhecido: " + rs.getString("tipo"));
         };
@@ -173,7 +172,7 @@ class MovimentacaoRepository {
                 case Movimentacao.Transferencia t -> new Campos(t.origem().valor(), t.destino().valor(), null, null,
                         null, null, t.motivo());
                 case Movimentacao.PagamentoFatura p -> new Campos(p.origem().valor(), null, null, null, p.cartaoId(),
-                        p.fatura().mes().atDay(1), null);
+                        p.fatura().primeiroDia(), null);
                 case Movimentacao.Rendimento r -> new Campos(null, r.destino().valor(), null, null, null, null, null);
             };
         }
