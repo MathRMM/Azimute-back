@@ -29,8 +29,8 @@ public class TabelaDeGastos {
             }
         }
 
-        String forma() {
-            return holerite == null ? "A_VISTA" : "DESCONTO_EM_FOLHA";
+        FormaDeGasto forma() {
+            return holerite == null ? FormaDeGasto.A_VISTA : FormaDeGasto.DESCONTO_EM_FOLHA;
         }
     }
 
@@ -51,7 +51,7 @@ public class TabelaDeGastos {
                         ON CONFLICT DO NOTHING""")
                 .param("id", g.id().valor()).param("data", g.data()).param("descricao", g.descricao())
                 .param("valor", g.valor().valor()).param("categoria", g.categoria().valor())
-                .param("forma", g.forma())
+                .param("forma", g.forma().name())
                 .param("conta", g.conta() == null ? null : g.conta().valor())
                 .param("holerite", g.holerite() == null ? null : g.holerite().valor())
                 .update() == 1;

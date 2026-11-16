@@ -7,10 +7,12 @@ import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
 import br.dev.azimute.fluxo.GanhoId;
 import br.dev.azimute.fluxo.GastoId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import br.dev.azimute.fluxo.tabelas.TabelaDeGanhos;
 import br.dev.azimute.fluxo.tabelas.TabelaDeGastos;
 import br.dev.azimute.fluxo.tabelas.TabelaDeRecebimentos;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -55,7 +57,7 @@ class EfeitosRepository {
     // ---- ganho SALARIO ----
 
     void salvarGanho(GanhoId id, Competencia competencia, Dinheiro bruto, Dinheiro liquido, HoleriteId holerite) {
-        ganhos.inserirOuReviver(new TabelaDeGanhos.Linha(id, competencia, "Salário " + competencia, "SALARIO", bruto,
+        ganhos.inserirOuReviver(new TabelaDeGanhos.Linha(id, competencia, "Salário " + competencia, TipoGanho.SALARIO, bruto,
                 liquido, holerite));
     }
 
@@ -79,7 +81,7 @@ class EfeitosRepository {
                 .param("ganho", ganho.valor()).query((rs, n) -> linha(rs, RecebimentoId::new)).list();
     }
 
-    void inserirRecebimento(RecebimentoId id, GanhoId ganho, Competencia competencia, String papel, Dinheiro valor,
+    void inserirRecebimento(RecebimentoId id, GanhoId ganho, Competencia competencia, PapelDeRecebimento papel, Dinheiro valor,
                             LocalDate data, ContaId conta) {
         recebimentos.inserir(new TabelaDeRecebimentos.Linha(id, ganho, competencia, papel, valor, data, conta, false));
     }
@@ -122,12 +124,12 @@ class EfeitosRepository {
                 .param("h", holerite.valor()).query((rs, n) -> linha(rs, LancamentoDaFolhaId::new)).list();
     }
 
-    void inserirLancamento(LancamentoDaFolhaId id, HoleriteId holerite, String papel, Dinheiro valor, LocalDate data,
+    void inserirLancamento(LancamentoDaFolhaId id, HoleriteId holerite, PapelDeLancamento papel, Dinheiro valor, LocalDate data,
                            ContaId conta) {
         jdbc.sql("""
                         INSERT INTO fluxo.lancamentos_folha (id, holerite_id, papel, valor, data, conta_id)
                         VALUES (:id, :h, :papel, :valor, :data, :conta)""")
-                .param("id", id.valor()).param("h", holerite.valor()).param("papel", papel).param("valor", valor.valor())
+                .param("id", id.valor()).param("h", holerite.valor()).param("papel", papel.name()).param("valor", valor.valor())
                 .param("data", data).param("conta", conta.valor())
                 .update();
     }

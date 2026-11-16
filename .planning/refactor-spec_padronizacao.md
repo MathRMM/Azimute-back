@@ -197,7 +197,19 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - **JSON:** continua igual, porque o Jackson serializa o enum pelo `name()`, que é o texto de hoje.
 - **Requests:** continuam recebendo texto, com a mensagem de erro de hoje, e convertem para o enum no mapeamento.
 
-**Testes:** os da Fase 1 cobrem o contrato; mais um teste unitário por enum novo, verificando que os nomes batem com o CHECK do banco.
+**Testes:**
+- [x] Os da Fase 1 cobrem o contrato do JSON e passaram sem alteração.
+- [x] Um teste por enum novo confere que os nomes são exatamente os do `CHECK` do banco, lidos da própria migration (`TipoMovimentacaoTest`, `EnumsDasTabelasTest`, `PapelDeLancamentoTest`, com o ajudante `ChecksDoBanco`).
+
+**Como ficou:**
+- **`TipoMovimentacao`** (`contas`): `Movimentacao.tipo()`, as respostas e o repositório usam o enum. O `NovaMovimentacao` continua com texto, para um tipo desconhecido responder `TIPO_NAO_PERMITIDO` como hoje.
+- **`PapelDeRecebimento`** (`fluxo.tabelas`): substitui o `Recebimento.Papel` e as Strings da folha e das tabelas.
+- **`PapelDeLancamento`** (`fluxo.folha`): FGTS e as três entradas da previdência.
+- **`FormaDeGasto`** (`fluxo.tabelas`), além do plano: a forma do gasto estava escrita como texto em dois lugares (`FormaPagamento.codigo()` e `TabelaDeGastos`).
+- **`TipoGanho`** mudou de `fluxo` para `fluxo.tabelas`: a linha da tabela de ganhos precisava dele, e deixá-lo público no pacote base aumentaria a API do módulo (o `ModularidadeTest` barra).
+- **Respostas** de holerite, catálogo, ganho, recebimento, gasto, movimentação e extrato carregam o enum em vez de `String`. O JSON é o mesmo.
+
+**Checklist:** [x] `make test` com 709 testes, 0 falhas, gate do JaCoCo verde.
 
 ### Fase 5 — Leitura de corpo e validação
 
@@ -278,3 +290,4 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 | 1.0 | 2026-11-16 | Criação inicial, com a opção A para percentual e o levantamento de UUID |
 | 1.1 | 2026-11-16 | Fase 1 concluída; A11 decidido (português); Fase 2 concluída, com os desvios do histórico e do `TaxaMensal` |
 | 1.2 | 2026-11-16 | Fase 3 concluída: `Identificador`, `Uuid7`, `RecebimentoId` e `LancamentoDaFolhaId` |
+| 1.3 | 2026-11-16 | Fase 4 concluída: enums de tipo, papel e forma; `TipoGanho` em `fluxo.tabelas` |

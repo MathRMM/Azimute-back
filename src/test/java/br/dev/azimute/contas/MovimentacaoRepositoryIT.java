@@ -53,7 +53,7 @@ class MovimentacaoRepositoryIT {
         assertThat(lida.excluida()).isFalse();
 
         var resposta = MovimentacaoResponse.de(lida.movimentacao());
-        assertThat(resposta.tipo()).isEqualTo(tipo);
+        assertThat(resposta.tipo()).isEqualTo(TipoMovimentacao.valueOf(tipo));
         assertThat(resposta.valor()).isEqualTo(valor);
         var conta = resposta.origem() != null ? resposta.origem() : resposta.destino();
         assertThat(conta).isIn(nubank.valor(), cdb.valor());

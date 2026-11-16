@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.GanhoId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import br.dev.azimute.fluxo.tabelas.TabelaDeRecebimentos;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -20,7 +21,7 @@ import java.util.UUID;
 class AdiantamentoRepository {
 
     /** Um recebimento pelo ID, de qualquer papel, para o reenvio decidir. */
-    record Adiantamento(RecebimentoId id, Competencia competencia, String papel, Dinheiro valor, LocalDate data, ContaId conta,
+    record Adiantamento(RecebimentoId id, Competencia competencia, PapelDeRecebimento papel, Dinheiro valor, LocalDate data, ContaId conta,
                         boolean lancadoAntes) {}
 
     private static final String COLUNAS = "id, competencia, papel, valor, data, conta_id, lancado_antes";
@@ -58,13 +59,13 @@ class AdiantamentoRepository {
 
     /** Solto, sem ganho: o holerite da competência o associa depois (RF34). */
     void inserir(Adiantamento a) {
-        recebimentos.inserir(new TabelaDeRecebimentos.Linha(a.id(), null, a.competencia(), "ADIANTAMENTO",
+        recebimentos.inserir(new TabelaDeRecebimentos.Linha(a.id(), null, a.competencia(), PapelDeRecebimento.ADIANTAMENTO,
                 a.valor(), a.data(), a.conta(), true));
     }
 
     private static Adiantamento mapear(ResultSet rs, int n) throws SQLException {
         return new Adiantamento(new RecebimentoId(rs.getObject("id", UUID.class)),
-                Competencia.doDia(rs.getObject("competencia", LocalDate.class)), rs.getString("papel"),
+                Competencia.doDia(rs.getObject("competencia", LocalDate.class)), PapelDeRecebimento.valueOf(rs.getString("papel")),
                 new Dinheiro(rs.getBigDecimal("valor")), rs.getObject("data", LocalDate.class),
                 new ContaId(rs.getObject("conta_id", UUID.class)), rs.getBoolean("lancado_antes"));
     }

@@ -75,14 +75,14 @@ sealed interface Movimentacao {
         }
     }
 
-    /** O nome do tipo como gravado em {@code contas.movimentacoes.tipo}. */
-    default String tipo() {
+    /** O tipo, gravado pelo nome em {@code contas.movimentacoes.tipo}. */
+    default TipoMovimentacao tipo() {
         return switch (this) {
-            case Entrada e -> "ENTRADA";
-            case Saida s -> "SAIDA";
-            case Transferencia t -> "TRANSFERENCIA";
-            case PagamentoFatura p -> "PAGAMENTO_FATURA";
-            case Rendimento r -> "RENDIMENTO";
+            case Entrada e -> TipoMovimentacao.ENTRADA;
+            case Saida s -> TipoMovimentacao.SAIDA;
+            case Transferencia t -> TipoMovimentacao.TRANSFERENCIA;
+            case PagamentoFatura p -> TipoMovimentacao.PAGAMENTO_FATURA;
+            case Rendimento r -> TipoMovimentacao.RENDIMENTO;
         };
     }
 

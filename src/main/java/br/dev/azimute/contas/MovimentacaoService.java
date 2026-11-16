@@ -139,10 +139,10 @@ class MovimentacaoService {
 
     /** Só transferência e rendimento entram pela API (RF14). */
     private static Movimentacao montar(MovimentacaoId id, NovaMovimentacao nova) {
-        return switch (nova.tipo()) {
-            case "TRANSFERENCIA" -> transferencia(id, nova);
-            case "RENDIMENTO" -> rendimento(id, nova);
-            default -> throw new TipoNaoPermitidoException(nova.tipo());
+        return switch (TipoMovimentacao.doTexto(nova.tipo()).orElse(null)) {
+            case TRANSFERENCIA -> transferencia(id, nova);
+            case RENDIMENTO -> rendimento(id, nova);
+            case null, default -> throw new TipoNaoPermitidoException(nova.tipo());
         };
     }
 

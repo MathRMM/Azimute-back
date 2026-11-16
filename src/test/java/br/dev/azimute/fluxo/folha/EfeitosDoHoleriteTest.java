@@ -3,6 +3,7 @@ package br.dev.azimute.fluxo.folha;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.fluxo.GanhoId;
 import br.dev.azimute.fluxo.GastoId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import org.junit.jupiter.api.Test;
 
@@ -46,8 +47,8 @@ class EfeitosDoHoleriteTest {
                 new GanhoId(EfeitosDoHolerite.referencia(id, "GANHO")), Dinheiro.de("5000"), Dinheiro.de("3920")));
         assertThat(efeitos.recebimentos()).containsExactly(
                 new EfeitosDoHolerite.RecebimentoEsperado(new RecebimentoId(EfeitosDoHolerite.referencia(id, "ADIANTAMENTO")),
-                        "ADIANTAMENTO", Dinheiro.de("2500"), DIA_15, CONFIGURACAO.salario(), false),
-                new EfeitosDoHolerite.RecebimentoEsperado(new RecebimentoId(EfeitosDoHolerite.referencia(id, "LIQUIDO")), "LIQUIDO",
+                        PapelDeRecebimento.ADIANTAMENTO, Dinheiro.de("2500"), DIA_15, CONFIGURACAO.salario(), false),
+                new EfeitosDoHolerite.RecebimentoEsperado(new RecebimentoId(EfeitosDoHolerite.referencia(id, "LIQUIDO")), PapelDeRecebimento.LIQUIDO,
                         Dinheiro.de("1420"), DIA_30, CONFIGURACAO.salario(), false));
     }
 
@@ -56,10 +57,10 @@ class EfeitosDoHoleriteTest {
         var efeitos = calcular("50", HoleriteDeExemplo.rubricas(), null);
 
         assertThat(efeitos.lancamentos()).containsExactly(
-                lancamento("FGTS", "400", CONFIGURACAO.fgts()),
-                lancamento("PREV_BASICA", "50", CONFIGURACAO.previdencia()),
-                lancamento("PREV_CONTRAPARTIDA", "50", CONFIGURACAO.previdencia()),
-                lancamento("PREV_VOLUNTARIA", "250", CONFIGURACAO.previdencia()));
+                lancamento(PapelDeLancamento.FGTS, "400", CONFIGURACAO.fgts()),
+                lancamento(PapelDeLancamento.PREV_BASICA, "50", CONFIGURACAO.previdencia()),
+                lancamento(PapelDeLancamento.PREV_CONTRAPARTIDA, "50", CONFIGURACAO.previdencia()),
+                lancamento(PapelDeLancamento.PREV_VOLUNTARIA, "250", CONFIGURACAO.previdencia()));
     }
 
     @Test
@@ -93,10 +94,10 @@ class EfeitosDoHoleriteTest {
         var efeitos = EfeitosDoHolerite.calcular(semFgts, rubricas, CATALOGO, CONFIGURACAO, null);
 
         assertThat(efeitos.recebimentos()).extracting(EfeitosDoHolerite.RecebimentoEsperado::papel)
-                .containsExactly("LIQUIDO");
+                .containsExactly(PapelDeRecebimento.LIQUIDO);
         assertThat(efeitos.ganho().liquido()).isEqualTo(Dinheiro.de("3920"));
         assertThat(efeitos.lancamentos()).extracting(EfeitosDoHolerite.LancamentoEsperado::papel)
-                .containsExactly("PREV_BASICA", "PREV_VOLUNTARIA");
+                .containsExactly(PapelDeLancamento.PREV_BASICA, PapelDeLancamento.PREV_VOLUNTARIA);
     }
 
     @Test
@@ -106,7 +107,7 @@ class EfeitosDoHoleriteTest {
         var efeitos = calcular("50", HoleriteDeExemplo.rubricas(), antecipado);
 
         assertThat(efeitos.recebimentos().getFirst()).isEqualTo(new EfeitosDoHolerite.RecebimentoEsperado(
-                antecipado, "ADIANTAMENTO", Dinheiro.de("2500"), DIA_15, CONFIGURACAO.salario(), true));
+                antecipado, PapelDeRecebimento.ADIANTAMENTO, Dinheiro.de("2500"), DIA_15, CONFIGURACAO.salario(), true));
     }
 
     @Test
@@ -142,9 +143,9 @@ class EfeitosDoHoleriteTest {
                 CONFIGURACAO, antecipado);
     }
 
-    private EfeitosDoHolerite.LancamentoEsperado lancamento(String papel, String valor,
+    private EfeitosDoHolerite.LancamentoEsperado lancamento(PapelDeLancamento papel, String valor,
                                                             br.dev.azimute.contas.ContaId conta) {
-        return new EfeitosDoHolerite.LancamentoEsperado(new LancamentoDaFolhaId(EfeitosDoHolerite.referencia(id, papel)), papel,
+        return new EfeitosDoHolerite.LancamentoEsperado(new LancamentoDaFolhaId(EfeitosDoHolerite.referencia(id, papel.name())), papel,
                 Dinheiro.de(valor), DIA_30, conta);
     }
 }

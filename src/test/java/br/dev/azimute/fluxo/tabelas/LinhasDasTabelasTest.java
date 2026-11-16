@@ -24,8 +24,8 @@ class LinhasDasTabelasTest {
 
     @Test
     void gasto_com_conta_e_a_vista_e_com_holerite_e_desconto_em_folha() {
-        assertThat(gasto(CONTA, null).forma()).isEqualTo("A_VISTA");
-        assertThat(gasto(null, HOLERITE).forma()).isEqualTo("DESCONTO_EM_FOLHA");
+        assertThat(gasto(CONTA, null).forma()).isEqualTo(FormaDeGasto.A_VISTA);
+        assertThat(gasto(null, HOLERITE).forma()).isEqualTo(FormaDeGasto.DESCONTO_EM_FOLHA);
     }
 
     @Test
@@ -38,9 +38,9 @@ class LinhasDasTabelasTest {
     void toda_linha_exige_id() {
         assertThatThrownBy(() -> new TabelaDeGastos.Linha(null, DIA, "x", Dinheiro.de("1"), CATEGORIA, CONTA, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TabelaDeGanhos.Linha(null, Competencia.de("2026-11"), "x", "OUTRO",
+        assertThatThrownBy(() -> new TabelaDeGanhos.Linha(null, Competencia.de("2026-11"), "x", TipoGanho.OUTRO,
                 Dinheiro.de("1"), Dinheiro.de("1"), null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TabelaDeRecebimentos.Linha(null, null, Competencia.de("2026-11"), "UNICO",
+        assertThatThrownBy(() -> new TabelaDeRecebimentos.Linha(null, null, Competencia.de("2026-11"), PapelDeRecebimento.AVULSO,
                 Dinheiro.de("1"), DIA, CONTA, false)).isInstanceOf(NullPointerException.class);
     }
 

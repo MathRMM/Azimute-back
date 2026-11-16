@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.FormaDeGasto;
 import br.dev.azimute.fluxo.tabelas.TabelaDeGastos;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -97,9 +98,11 @@ class GastoRepository {
     }
 
     private static Gasto mapear(ResultSet rs) throws SQLException {
-        FormaPagamento forma = "A_VISTA".equals(rs.getString("forma"))
-                ? new FormaPagamento.AVista(new ContaId(rs.getObject("conta_id", UUID.class)))
-                : new FormaPagamento.DescontoEmFolha(new HoleriteId(rs.getObject("holerite_id", UUID.class)));
+        FormaPagamento forma = switch (FormaDeGasto.valueOf(rs.getString("forma"))) {
+            case A_VISTA -> new FormaPagamento.AVista(new ContaId(rs.getObject("conta_id", UUID.class)));
+            case DESCONTO_EM_FOLHA ->
+                    new FormaPagamento.DescontoEmFolha(new HoleriteId(rs.getObject("holerite_id", UUID.class)));
+        };
         return new Gasto(new GastoId(rs.getObject("id", UUID.class)), rs.getObject("data", LocalDate.class),
                 rs.getString("descricao"), new Dinheiro(rs.getBigDecimal("valor")),
                 new CategoriaId(rs.getObject("categoria_id", UUID.class)), forma);

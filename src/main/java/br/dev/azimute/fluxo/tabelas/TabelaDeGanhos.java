@@ -14,7 +14,7 @@ import java.util.Objects;
 public class TabelaDeGanhos {
 
     /** Um ganho a gravar. O holerite só existe no ganho {@code SALARIO}. */
-    public record Linha(GanhoId id, Competencia competencia, String descricao, String tipo, Dinheiro bruto,
+    public record Linha(GanhoId id, Competencia competencia, String descricao, TipoGanho tipo, Dinheiro bruto,
                         Dinheiro liquido, HoleriteId holerite) {
 
         public Linha {
@@ -57,7 +57,7 @@ public class TabelaDeGanhos {
 
     private static JdbcClient.StatementSpec parametros(JdbcClient.StatementSpec sql, Linha g) {
         return sql.param("id", g.id().valor()).param("competencia", g.competencia().primeiroDia())
-                .param("descricao", g.descricao()).param("tipo", g.tipo())
+                .param("descricao", g.descricao()).param("tipo", g.tipo().name())
                 .param("bruto", g.bruto().valor()).param("liquido", g.liquido().valor())
                 .param("holerite", g.holerite() == null ? null : g.holerite().valor());
     }

@@ -5,6 +5,7 @@ import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
 import br.dev.azimute.fluxo.GanhoId;
 import br.dev.azimute.fluxo.GastoId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 
 import java.nio.charset.StandardCharsets;
@@ -26,10 +27,10 @@ final class EfeitosDoHolerite {
 
     record GanhoEsperado(GanhoId id, Dinheiro bruto, Dinheiro liquido) {}
 
-    record RecebimentoEsperado(RecebimentoId id, String papel, Dinheiro valor, LocalDate data, ContaId conta,
+    record RecebimentoEsperado(RecebimentoId id, PapelDeRecebimento papel, Dinheiro valor, LocalDate data, ContaId conta,
                                boolean lancadoAntes) {}
 
-    record LancamentoEsperado(LancamentoDaFolhaId id, String papel, Dinheiro valor, LocalDate data, ContaId conta) {}
+    record LancamentoEsperado(LancamentoDaFolhaId id, PapelDeLancamento papel, Dinheiro valor, LocalDate data, ContaId conta) {}
 
     record GastoEsperado(GastoId id, String codigo, String descricao, Dinheiro valor, LocalDate data,
                          CategoriaId categoria) {}
@@ -52,11 +53,11 @@ final class EfeitosDoHolerite {
         if (adiantamento.positivo()) {
             var antecipado = adiantamentoAntecipado != null;
             recebimentos.add(new RecebimentoEsperado(antecipado ? adiantamentoAntecipado
-                    : new RecebimentoId(referencia(id, "ADIANTAMENTO")), "ADIANTAMENTO", adiantamento, holerite.dataAdiantamento(),
+                    : new RecebimentoId(referencia(id, "ADIANTAMENTO")), PapelDeRecebimento.ADIANTAMENTO, adiantamento, holerite.dataAdiantamento(),
                     configuracao.salario(), antecipado));
         }
         if (holerite.liquido().positivo()) {
-            recebimentos.add(new RecebimentoEsperado(new RecebimentoId(referencia(id, "LIQUIDO")), "LIQUIDO", holerite.liquido(),
+            recebimentos.add(new RecebimentoEsperado(new RecebimentoId(referencia(id, "LIQUIDO")), PapelDeRecebimento.LIQUIDO, holerite.liquido(),
                     holerite.dataLiquido(), configuracao.salario(), false));
         }
         var recebido = recebimentos.stream().map(RecebimentoEsperado::valor).reduce(Dinheiro.ZERO, Dinheiro::mais);
@@ -64,12 +65,12 @@ final class EfeitosDoHolerite {
         // P1: FGTS e previdência entram na data do líquido.
         var lancamentos = new ArrayList<LancamentoEsperado>();
         var data = holerite.dataLiquido();
-        adicionar(lancamentos, id, "FGTS", holerite.bases().fgtsMes(), data, configuracao.fgts());
-        adicionar(lancamentos, id, "PREV_BASICA", soma(NaturezaRubrica.PREVIDENCIA_BASICA, rubricas, catalogo), data,
+        adicionar(lancamentos, id, PapelDeLancamento.FGTS, holerite.bases().fgtsMes(), data, configuracao.fgts());
+        adicionar(lancamentos, id, PapelDeLancamento.PREV_BASICA, soma(NaturezaRubrica.PREVIDENCIA_BASICA, rubricas, catalogo), data,
                 configuracao.previdencia());
-        adicionar(lancamentos, id, "PREV_CONTRAPARTIDA", holerite.contrapartidaPrevidencia(), data,
+        adicionar(lancamentos, id, PapelDeLancamento.PREV_CONTRAPARTIDA, holerite.contrapartidaPrevidencia(), data,
                 configuracao.previdencia());
-        adicionar(lancamentos, id, "PREV_VOLUNTARIA",
+        adicionar(lancamentos, id, PapelDeLancamento.PREV_VOLUNTARIA,
                 soma(NaturezaRubrica.PREVIDENCIA_VOLUNTARIA, rubricas, catalogo), data, configuracao.previdencia());
 
         return new Efeitos(new GanhoEsperado(ganho(id), holerite.totalVencimentos(), recebido),
@@ -111,10 +112,10 @@ final class EfeitosDoHolerite {
         return List.copyOf(porCodigo.values());
     }
 
-    private static void adicionar(List<LancamentoEsperado> lancamentos, HoleriteId holerite, String papel,
+    private static void adicionar(List<LancamentoEsperado> lancamentos, HoleriteId holerite, PapelDeLancamento papel,
                                   Dinheiro valor, LocalDate data, ContaId conta) {
         if (valor != null && valor.positivo()) {
-            lancamentos.add(new LancamentoEsperado(new LancamentoDaFolhaId(referencia(holerite, papel)), papel, valor, data, conta));
+            lancamentos.add(new LancamentoEsperado(new LancamentoDaFolhaId(referencia(holerite, papel.name())), papel, valor, data, conta));
         }
     }
 

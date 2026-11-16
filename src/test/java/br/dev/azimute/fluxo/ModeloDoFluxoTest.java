@@ -4,7 +4,9 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -72,8 +74,8 @@ class ModeloDoFluxoTest {
     @Test
     void recebimento_precisa_de_valor_positivo() {
         assertThatThrownBy(() -> recebimento("0")).isInstanceOf(IllegalArgumentException.class);
-        assertThat(recebimento("2500").papel()).isEqualTo(Recebimento.Papel.ADIANTAMENTO);
-        assertThat(Recebimento.Papel.values()).extracting(Enum::name)
+        assertThat(recebimento("2500").papel()).isEqualTo(PapelDeRecebimento.ADIANTAMENTO);
+        assertThat(PapelDeRecebimento.values()).extracting(Enum::name)
                 .containsExactly("AVULSO", "ADIANTAMENTO", "LIQUIDO");
     }
 
@@ -109,7 +111,7 @@ class ModeloDoFluxoTest {
     }
 
     private static Recebimento recebimento(String valor) {
-        return new Recebimento(new RecebimentoId(UUID.randomUUID()), null, NOVEMBRO, Recebimento.Papel.ADIANTAMENTO, Dinheiro.de(valor),
+        return new Recebimento(new RecebimentoId(UUID.randomUUID()), null, NOVEMBRO, PapelDeRecebimento.ADIANTAMENTO, Dinheiro.de(valor),
                 DIA, CONTA, true);
     }
 }

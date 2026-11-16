@@ -132,10 +132,10 @@ class FolhaController {
     /** RN19: básica e voluntária como vieram; a contrapartida gravada na importação. */
     record Previdencia(Dinheiro basica, Dinheiro contrapartida, Dinheiro voluntaria, Dinheiro total) {}
 
-    record Aviso(String codigo, String descricao, String natureza) {}
+    record Aviso(String codigo, String descricao, NaturezaRubrica natureza) {}
 
     /** Impostos e previdência calculados na leitura, das rubricas e do catálogo (T10). */
-    record HoleriteResponse(UUID id, Competencia competencia, String origem, Dinheiro totalVencimentos,
+    record HoleriteResponse(UUID id, Competencia competencia, Holerite.Origem origem, Dinheiro totalVencimentos,
                             Dinheiro totalDescontos, Dinheiro liquido, BasesLidas bases, Impostos impostos,
                             Previdencia previdencia, LocalDate dataAdiantamento, LocalDate dataLiquido,
                             List<RubricaResponse> rubricas, List<Aviso> avisos) {
@@ -148,20 +148,20 @@ class FolhaController {
             var voluntaria = EfeitosDoHolerite.soma(NaturezaRubrica.PREVIDENCIA_VOLUNTARIA, d.rubricas(),
                     d.catalogo());
             var contrapartida = h.contrapartidaPrevidencia();
-            return new HoleriteResponse(h.id().valor(), h.competencia(), h.origem().name(), h.totalVencimentos(),
+            return new HoleriteResponse(h.id().valor(), h.competencia(), h.origem(), h.totalVencimentos(),
                     h.totalDescontos(), h.liquido(), h.bases(), new Impostos(inss, irrf, inss.mais(irrf)),
                     new Previdencia(basica, contrapartida, voluntaria, basica.mais(contrapartida).mais(voluntaria)),
                     h.dataAdiantamento(), h.dataLiquido(), d.rubricas().stream().map(RubricaResponse::de).toList(),
-                    d.avisos().stream().map(r -> new Aviso(r.codigo(), r.descricao(), r.natureza().name()))
+                    d.avisos().stream().map(r -> new Aviso(r.codigo(), r.descricao(), r.natureza()))
                             .toList());
         }
     }
 
-    record HoleriteResumoResponse(UUID id, Competencia competencia, String origem, Dinheiro totalVencimentos,
+    record HoleriteResumoResponse(UUID id, Competencia competencia, Holerite.Origem origem, Dinheiro totalVencimentos,
                                   Dinheiro totalDescontos, Dinheiro liquido, LocalDate dataAdiantamento,
                                   LocalDate dataLiquido) {
         static HoleriteResumoResponse de(Holerite h) {
-            return new HoleriteResumoResponse(h.id().valor(), h.competencia(), h.origem().name(),
+            return new HoleriteResumoResponse(h.id().valor(), h.competencia(), h.origem(),
                     h.totalVencimentos(), h.totalDescontos(), h.liquido(), h.dataAdiantamento(), h.dataLiquido());
         }
     }
@@ -177,10 +177,10 @@ class FolhaController {
         }
     }
 
-    record RubricaCatalogoResponse(String codigo, String descricao, String natureza, UUID categoria,
+    record RubricaCatalogoResponse(String codigo, String descricao, NaturezaRubrica natureza, UUID categoria,
                                    boolean aClassificar) {
         static RubricaCatalogoResponse de(RubricaCatalogo r) {
-            return new RubricaCatalogoResponse(r.codigo(), r.descricao(), r.natureza().name(),
+            return new RubricaCatalogoResponse(r.codigo(), r.descricao(), r.natureza(),
                     r.categoria() == null ? null : r.categoria().valor(), r.aClassificar());
         }
     }

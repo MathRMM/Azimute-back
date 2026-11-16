@@ -2,6 +2,7 @@ package br.dev.azimute.fluxo;
 
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.FormaDeGasto;
 
 import java.util.Objects;
 
@@ -25,11 +26,11 @@ sealed interface FormaPagamento {
         }
     }
 
-    /** O nome da forma como gravado em {@code fluxo.gastos.forma}. */
-    default String codigo() {
+    /** A forma, gravada pelo nome em {@code fluxo.gastos.forma}. */
+    default FormaDeGasto codigo() {
         return switch (this) {
-            case AVista a -> "A_VISTA";
-            case DescontoEmFolha d -> "DESCONTO_EM_FOLHA";
+            case AVista a -> FormaDeGasto.A_VISTA;
+            case DescontoEmFolha d -> FormaDeGasto.DESCONTO_EM_FOLHA;
         };
     }
 }

@@ -2,7 +2,9 @@ package br.dev.azimute.fluxo;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.contas.ContasFacade;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.RecebimentoId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +37,7 @@ class GanhoService {
         exigirAvulso(novo.tipo());
         var ganho = new Ganho(id, novo.competencia(), novo.descricao().strip(), novo.tipo(), novo.bruto(),
                 novo.liquido(), null);
-        var recebimento = new Recebimento(new RecebimentoId(id.valor()), id, novo.competencia(), Recebimento.Papel.AVULSO,
+        var recebimento = new Recebimento(new RecebimentoId(id.valor()), id, novo.competencia(), PapelDeRecebimento.AVULSO,
                 novo.liquido(), novo.recebidoEm(), novo.conta(), false);
         var atual = new GanhoComRecebimentos(ganho, List.of(recebimento));
 
