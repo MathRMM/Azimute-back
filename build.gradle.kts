@@ -32,6 +32,8 @@ dependencies {
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
+    // Leitura do holerite em PDF por extração de texto (RNF03, Fase 6 do SPEC do fluxo)
+    implementation("org.apache.pdfbox:pdfbox:3.0.8")
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")

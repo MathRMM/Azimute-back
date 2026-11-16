@@ -137,6 +137,25 @@ class SchemaContasIT {
     }
 
     @Test
+    void fgts_e_previdencia_sao_tipos_aceitos_e_tipo_desconhecido_nao() {
+        assertThatCode(() -> {
+            contas().doTipo("FGTS");
+            contas().doTipo("PREVIDENCIA");
+        }).doesNotThrowAnyException();
+        assertThatThrownBy(() -> contas().doTipo("CRIPTO"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("contas_tipo_check");
+    }
+
+    @Test
+    void limite_de_cheque_especial_em_fgts_ou_previdencia_e_recusado() {
+        assertThatThrownBy(() -> contas().comLimite("100").doTipo("FGTS"))
+                .hasMessageContaining("limite_so_em_corrente");
+        assertThatThrownBy(() -> contas().comLimite("100").doTipo("PREVIDENCIA"))
+                .hasMessageContaining("limite_so_em_corrente");
+    }
+
+    @Test
     void mesmo_gasto_so_gera_uma_saida_viva() {
         var nubank = contas().corrente();
         var gasto = UUID.randomUUID();

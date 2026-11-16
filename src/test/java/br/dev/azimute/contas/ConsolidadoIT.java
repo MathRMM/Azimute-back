@@ -45,7 +45,7 @@ class ConsolidadoIT {
     @BeforeEach
     void preparar() throws Exception {
         mvc = ClienteDeTeste.autenticado(contexto, jdbc);
-        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas").update();
+        jdbc.sql("TRUNCATE contas.conciliacoes, contas.movimentacoes, contas.contas CASCADE").update();
         nubank = criar("Nubank", "CORRENTE", "GIRO", "2300", "1000");
         cdb = criar("CDB Liquidez", "INVESTIMENTO", "RESERVA", "9000", null);
     }
@@ -95,6 +95,35 @@ class ConsolidadoIT {
         mvc.perform(get(CONSOLIDADO))
                 .andExpect(jsonPath("$.posicaoGeral").value("2300.00"))
                 .andExpect(jsonPath("$.contas", hasSize(1)));
+    }
+
+    @Test
+    void fgts_e_previdencia_aparecem_so_no_bloqueado_e_a_inativa_some() throws Exception {
+        criar("FGTS", "FGTS", "RESERVA", "1000", null);
+        var previdencia = criar("Previdência", "PREVIDENCIA", "RESERVA", "250", null);
+        criar("Previdência antiga", "PREVIDENCIA", "RESERVA", "80", null);
+        mvc.perform(patch("/api/contas/" + previdencia).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"ativa\": false}")).andExpect(status().isOk());
+
+        mvc.perform(get(CONSOLIDADO)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.posicaoGeral").value("11300.00"))
+                .andExpect(jsonPath("$.saldoEmConta").value("2300.00"))
+                .andExpect(jsonPath("$.bloqueado").value("1080.00"))
+                .andExpect(jsonPath("$.contas", hasSize(4)));
+    }
+
+    @Test
+    void sem_conta_bloqueada_o_bloqueado_vem_zero() throws Exception {
+        mvc.perform(get(CONSOLIDADO)).andExpect(jsonPath("$.bloqueado").value("0.00"));
+    }
+
+    @Test
+    void limite_de_cheque_especial_em_fgts_e_recusado() throws Exception {
+        var corpo = Map.of("apelido", "FGTS", "instituicao", "Caixa", "tipo", "FGTS", "funcao", "RESERVA",
+                "saldoInicial", "10", "dataSaldoInicial", "2026-11-01", "limiteChequeEspecial", "100");
+        mvc.perform(post("/api/contas").contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(corpo))).andExpect(status().is(422))
+                .andExpect(jsonPath("$.erro").value("LIMITE_SO_EM_CONTA_CORRENTE"));
     }
 
     @Test

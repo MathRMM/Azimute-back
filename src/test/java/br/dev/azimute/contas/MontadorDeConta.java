@@ -41,6 +41,10 @@ final class MontadorDeConta {
         return inserir("INVESTIMENTO", "RESERVA");
     }
 
+    UUID doTipo(String tipo) {
+        return inserir(tipo, "RESERVA");
+    }
+
     UUID conciliar(UUID conta, LocalDate data, String saldoReal) {
         return jdbc.sql("""
                         INSERT INTO contas.conciliacoes (conta_id, data, saldo_real, saldo_calculado, divergencia)

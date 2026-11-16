@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -69,6 +70,13 @@ public class TradutorDeErros {
         var nome = e.getPropertyName() == null ? "parâmetro" : e.getPropertyName();
         return resposta(HttpStatus.BAD_REQUEST, new ErroApi("PARAMETRO_INVALIDO",
                 "Valor inválido para " + nome, Map.of("parametro", nome)));
+    }
+
+    /** Upload acima do limite (SEC04, T12 do SPEC do fluxo): 413, sem ecoar nada do arquivo. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ErroApi> arquivoGrandeDemais(MaxUploadSizeExceededException e) {
+        return resposta(HttpStatus.CONTENT_TOO_LARGE,
+                ErroApi.de("ARQUIVO_GRANDE_DEMAIS", "O arquivo passa do limite de 2 MB"));
     }
 
     /** Erros do próprio Spring MVC (404, 405, 415, parâmetro ausente…) mantêm o status, no nosso formato. */

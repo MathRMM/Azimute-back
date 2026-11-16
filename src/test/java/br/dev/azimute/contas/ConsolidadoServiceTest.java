@@ -81,6 +81,41 @@ class ConsolidadoServiceTest {
         assertThat(consolidado.saldoEmConta()).isEqualTo(Dinheiro.ZERO);
     }
 
+    @Test
+    void fgts_e_previdencia_ficam_so_no_bloqueado() {
+        when(contas.listar(false)).thenReturn(List.of(
+                item(TipoConta.FGTS, Funcao.RESERVA, "1000", "0"),
+                item(TipoConta.CORRENTE, Funcao.GIRO, "500", "0")));
+
+        var consolidado = new ConsolidadoService(contas, List.of()).consolidado();
+
+        assertThat(consolidado.posicaoGeral()).isEqualTo(Dinheiro.de("500"));
+        assertThat(consolidado.saldoEmConta()).isEqualTo(Dinheiro.de("500"));
+        assertThat(consolidado.bloqueado()).isEqualTo(Dinheiro.de("1000"));
+        assertThat(consolidado.contas()).hasSize(2);
+    }
+
+    @Test
+    void bloqueado_soma_fgts_e_previdencia_e_as_dividas_nao_o_tocam() {
+        when(contas.listar(false)).thenReturn(List.of(
+                item(TipoConta.FGTS, Funcao.RESERVA, "400", "0"),
+                item(TipoConta.PREVIDENCIA, Funcao.RESERVA, "350", "0"),
+                item(TipoConta.CORRENTE, Funcao.GIRO, "100", "0")));
+        FontesDeDivida cartao = () -> Dinheiro.de("300");
+
+        var consolidado = new ConsolidadoService(contas, List.of(cartao)).consolidado();
+
+        assertThat(consolidado.bloqueado()).isEqualTo(Dinheiro.de("750"));
+        assertThat(consolidado.posicaoGeral()).isEqualTo(Dinheiro.de("-200"));
+    }
+
+    @Test
+    void sem_fgts_nem_previdencia_o_bloqueado_e_zero() {
+        when(contas.listar(false)).thenReturn(List.of(item(TipoConta.CORRENTE, Funcao.GIRO, "100", "0")));
+
+        assertThat(new ConsolidadoService(contas, List.of()).consolidado().bloqueado()).isEqualTo(Dinheiro.ZERO);
+    }
+
     private static ContaComSaldo item(TipoConta tipo, Funcao funcao, String saldo, String limite) {
         var conta = new Conta(new ContaId(UUID.randomUUID()), "Conta " + UUID.randomUUID(), "Banco", tipo, funcao,
                 Dinheiro.de(limite), true);
