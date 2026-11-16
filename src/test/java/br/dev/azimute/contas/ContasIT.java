@@ -129,17 +129,19 @@ class ContasIT {
         semApelido.remove("apelido");
         criar(semApelido).andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.apelido").exists());
+                .andExpect(jsonPath("$.detalhes.campos.apelido").value("must not be blank"));
 
         var tresCasas = nubank();
         tresCasas.put("saldoInicial", "10.005");
         criar(tresCasas).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.saldoInicial").exists());
+                .andExpect(jsonPath("$.detalhes.campos.saldoInicial")
+                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"));
 
         var limiteNegativo = nubank();
         limiteNegativo.put("limiteChequeEspecial", "-1");
         criar(limiteNegativo).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.limiteChequeEspecial").exists());
+                .andExpect(jsonPath("$.detalhes.campos.limiteChequeEspecial")
+                        .value("must be greater than or equal to 0"));
     }
 
     @Test
@@ -202,12 +204,15 @@ class ContasIT {
         var id = idDe(criar(nubank()));
 
         mvc.perform(patch(CONTAS + "/" + id).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"ativa\": \"talvez\", \"funcao\": \"OUTRA\", \"limiteChequeEspecial\": \"1.001\"}"))
+                        .content("{\"ativa\": \"talvez\", \"funcao\": \"OUTRA\", \"limiteChequeEspecial\": \"1.001\", "
+                                + "\"apelido\": 5}"))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.ativa").exists())
-                .andExpect(jsonPath("$.detalhes.campos.funcao").exists())
-                .andExpect(jsonPath("$.detalhes.campos.limiteChequeEspecial").exists());
+                .andExpect(jsonPath("$.detalhes.campos.ativa").value("deve ser true ou false"))
+                .andExpect(jsonPath("$.detalhes.campos.funcao").value("deve ser um de [GIRO, RESERVA]"))
+                .andExpect(jsonPath("$.detalhes.campos.limiteChequeEspecial")
+                        .value("deve ser um valor não negativo com até 2 casas decimais"))
+                .andExpect(jsonPath("$.detalhes.campos.apelido").value("deve ser texto"));
     }
 
     @Test

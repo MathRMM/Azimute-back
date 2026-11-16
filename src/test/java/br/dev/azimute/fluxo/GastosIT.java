@@ -129,12 +129,19 @@ class GastosIT {
                 .andExpect(jsonPath("$.erro").value("CAMPO_NAO_EDITAVEL"));
         alterar(id, Map.of("valor", "1.234", "data", "ontem", "conta", "x", "categoria", 5, "descricao", " "))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.valor").exists())
-                .andExpect(jsonPath("$.detalhes.campos.data").exists())
-                .andExpect(jsonPath("$.detalhes.campos.conta").exists())
-                .andExpect(jsonPath("$.detalhes.campos.categoria").exists())
-                .andExpect(jsonPath("$.detalhes.campos.descricao").exists());
-        alterar(id, Map.of("valor", "0")).andExpect(status().is(422));
+                .andExpect(jsonPath("$.detalhes.campos.valor")
+                        .value("deve ser um valor positivo com até 2 casas decimais"))
+                .andExpect(jsonPath("$.detalhes.campos.data").value("deve estar no formato AAAA-MM-DD"))
+                .andExpect(jsonPath("$.detalhes.campos.conta").value("deve ser um ID válido"))
+                .andExpect(jsonPath("$.detalhes.campos.categoria").value("deve ser um ID válido"))
+                .andExpect(jsonPath("$.detalhes.campos.descricao").value("deve ser texto não vazio"));
+        alterar(id, Map.of("valor", "0")).andExpect(status().is(422))
+                .andExpect(jsonPath("$.detalhes.campos.valor")
+                        .value("deve ser um valor positivo com até 2 casas decimais"));
+        // Valor com 3 casas nunca é arredondado, nem no PUT nem no PATCH (caracterização da Fase 1).
+        registrar(UUID.randomUUID(), gasto("10.555", "2026-09-05", mercado, nubank)).andExpect(status().is(422))
+                .andExpect(jsonPath("$.detalhes.campos.valor")
+                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"));
         alterar(id, Map.of("conta", UUID.randomUUID().toString())).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.erro").value("CONTA_NAO_ENCONTRADA"));
         alterar(UUID.randomUUID(), Map.of("descricao", "x")).andExpect(status().isNotFound())
@@ -162,15 +169,18 @@ class GastosIT {
 
     @Test
     void validacao_do_corpo_e_401_sem_token() throws Exception {
-        for (var valor : new String[]{"1.234", "0", "-5"}) {
-            registrar(UUID.randomUUID(), gasto(valor, "2026-09-05", mercado, nubank)).andExpect(status().is(422))
-                    .andExpect(jsonPath("$.detalhes.campos.valor").exists());
+        var mensagens = Map.of("1.234", "numeric value out of bounds (<17 digits>.<2 digits> expected)",
+                "0", "must be greater than 0", "-5", "must be greater than 0");
+        for (var caso : mensagens.entrySet()) {
+            registrar(UUID.randomUUID(), gasto(caso.getKey(), "2026-09-05", mercado, nubank))
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.detalhes.campos.valor").value(caso.getValue()));
         }
         registrar(UUID.randomUUID(), Map.of("valor", "10")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.data").exists())
-                .andExpect(jsonPath("$.detalhes.campos.descricao").exists())
-                .andExpect(jsonPath("$.detalhes.campos.categoria").exists())
-                .andExpect(jsonPath("$.detalhes.campos.conta").exists());
+                .andExpect(jsonPath("$.detalhes.campos.data").value("must not be null"))
+                .andExpect(jsonPath("$.detalhes.campos.descricao").value("must not be blank"))
+                .andExpect(jsonPath("$.detalhes.campos.categoria").value("must not be null"))
+                .andExpect(jsonPath("$.detalhes.campos.conta").value("must not be null"));
         ClienteDeTeste.anonimo(contexto).perform(get("/api/gastos").param("competencia", "2026-09"))
                 .andExpect(status().isUnauthorized());
         assertThat(quantidadeDeGastos()).isZero();

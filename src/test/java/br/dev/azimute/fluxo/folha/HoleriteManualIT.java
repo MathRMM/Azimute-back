@@ -106,11 +106,13 @@ class HoleriteManualIT {
         invalido.remove("bases");
 
         api.importar(invalido).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.competencia").exists())
-                .andExpect(jsonPath("$.detalhes.campos.bases").exists())
-                .andExpect(jsonPath("$.detalhes.campos['rubricas[0].valorUnico']").exists())
-                .andExpect(jsonPath("$.detalhes.campos['rubricas[1].codigo']").exists())
-                .andExpect(jsonPath("$.detalhes.campos['rubricas[1].vencimento']").exists());
+                .andExpect(jsonPath("$.detalhes.campos.competencia").value("deve estar no formato AAAA-MM"))
+                .andExpect(jsonPath("$.detalhes.campos.bases").value("must not be null"))
+                .andExpect(jsonPath("$.detalhes.campos['rubricas[0].valorUnico']")
+                        .value("informe vencimento ou desconto, só um"))
+                .andExpect(jsonPath("$.detalhes.campos['rubricas[1].codigo']").value("must not be blank"))
+                .andExpect(jsonPath("$.detalhes.campos['rubricas[1].vencimento']")
+                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"));
     }
 
     @Test
@@ -251,8 +253,11 @@ class HoleriteManualIT {
 
         api.corrigirPrevidencia(outubro, "0").andExpect(status().isOk());
         api.saldo(api.previdencia, "650.00");
-        api.corrigirPrevidencia(outubro, "-1").andExpect(status().is(422));
-        api.corrigirPrevidencia(outubro, "1.234").andExpect(status().is(422));
+        for (var invalido : List.of("-1", "1.234", "abc")) {
+            api.corrigirPrevidencia(outubro, invalido).andExpect(status().is(422))
+                    .andExpect(jsonPath("$.detalhes.campos.contrapartida")
+                            .value("deve ser um valor de zero para cima com até 2 casas decimais"));
+        }
         api.corrigirPrevidencia(UUID.randomUUID(), "1").andExpect(status().isNotFound());
     }
 
