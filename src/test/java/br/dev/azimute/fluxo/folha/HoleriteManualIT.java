@@ -119,6 +119,7 @@ class HoleriteManualIT {
     void reenvio_identico_e_200_outro_da_mesma_competencia_e_409_e_o_excluido_tambem() throws Exception {
         api.configurada();
         var id = api.importarCriando(ApiDaFolha.holerite("2026-10"));
+        assertThat(id.version()).as("holerite novo nasce com UUID v7").isEqualTo(7);
 
         api.importar(ApiDaFolha.holerite("2026-10")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));

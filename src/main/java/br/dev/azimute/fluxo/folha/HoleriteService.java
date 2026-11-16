@@ -2,6 +2,7 @@ package br.dev.azimute.fluxo.folha;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Uuid7;
 import br.dev.azimute.contas.ContasFacade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,7 +127,7 @@ class HoleriteService {
             catalogo.inserirAClassificar(rubrica.codigo(), rubrica.descricao(), rubrica.vencimento() != null
                     ? NaturezaRubrica.PROVENTO : NaturezaRubrica.OUTRO_DESCONTO);
         }
-        var id = new HoleriteId(UUID.randomUUID());
+        var id = new HoleriteId(Uuid7.novo());
         // Sem data informada, o adiantamento lançado antes dá a data; sem ele, vale a padrão (RN18, RF34).
         var antecipado = adiantamentos.antecipado(competencia, EfeitosDoHolerite.referencia(id, "GANHO"));
         var adiantamento = dataAdiantamento != null ? dataAdiantamento
