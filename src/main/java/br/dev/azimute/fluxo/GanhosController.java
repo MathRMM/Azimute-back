@@ -1,5 +1,6 @@
 package br.dev.azimute.fluxo;
 
+import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
@@ -30,7 +31,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /** Ganhos avulsos (RF20–RF24). Exige token, como tudo sob {@code /api} (SEC01). */
@@ -39,8 +39,8 @@ import java.util.UUID;
 class GanhosController {
 
     private static final String MES = "\\d{4}-(0[1-9]|1[0-2])";
-    private static final Set<String> CAMPOS_EDITAVEIS =
-            Set.of("competencia", "descricao", "tipo", "bruto", "liquido", "conta", "recebidoEm");
+    private static final CamposEditaveis CAMPOS_EDITAVEIS =
+            new CamposEditaveis("competencia", "descricao", "tipo", "bruto", "liquido", "conta", "recebidoEm");
 
     /**
      * Valores positivos com até 2 casas, sem arredondar (RN03). O tipo entra como texto para que {@code SALARIO}
@@ -96,11 +96,8 @@ class GanhosController {
     /** Corpo como mapa, para nomear o campo proibido e distinguir ausente de inválido (RF22). */
     @PatchMapping("/{id}")
     GanhoResponse alterar(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
-        var proibidos = corpo.keySet().stream().filter(c -> !CAMPOS_EDITAVEIS.contains(c)).sorted().toList();
-        if (!proibidos.isEmpty()) {
-            throw new CampoNaoEditavelException(proibidos,
-                    "competência, descrição, tipo, bruto, líquido, conta e data do recebimento");
-        }
+        CAMPOS_EDITAVEIS.conferir(corpo, p -> new CampoNaoEditavelException(p,
+                "competência, descrição, tipo, bruto, líquido, conta e data do recebimento"));
         return GanhoResponse.de(ganhos.alterar(new GanhoId(id), lerAlteracao(corpo)));
     }
 

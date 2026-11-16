@@ -3,6 +3,7 @@ package br.dev.azimute.fluxo.folha;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
+import br.dev.azimute.fluxo.tabelas.TabelaDeRecebimentos;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -24,9 +25,11 @@ class AdiantamentoRepository {
     private static final String COLUNAS = "id, competencia, papel, valor, data, conta_id, lancado_antes";
 
     private final JdbcClient jdbc;
+    private final TabelaDeRecebimentos recebimentos;
 
-    AdiantamentoRepository(JdbcClient jdbc) {
+    AdiantamentoRepository(JdbcClient jdbc, TabelaDeRecebimentos recebimentos) {
         this.jdbc = jdbc;
+        this.recebimentos = recebimentos;
     }
 
     Optional<Adiantamento> buscar(UUID id) {
@@ -52,13 +55,10 @@ class AdiantamentoRepository {
                 .param("c", competencia.mes().atDay(1)).query(Long.class).single() > 0;
     }
 
+    /** Solto, sem ganho: o holerite da competência o associa depois (RF34). */
     void inserir(Adiantamento a) {
-        jdbc.sql("""
-                        INSERT INTO fluxo.recebimentos (id, competencia, papel, valor, data, conta_id, lancado_antes)
-                        VALUES (:id, :c, 'ADIANTAMENTO', :valor, :data, :conta, true)""")
-                .param("id", a.id()).param("c", a.competencia().mes().atDay(1)).param("valor", a.valor().valor())
-                .param("data", a.data()).param("conta", a.conta().valor())
-                .update();
+        recebimentos.inserir(new TabelaDeRecebimentos.Linha(a.id(), null, a.competencia(), "ADIANTAMENTO",
+                a.valor(), a.data(), a.conta(), true));
     }
 
     private static Adiantamento mapear(ResultSet rs, int n) throws SQLException {

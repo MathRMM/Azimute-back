@@ -1,13 +1,13 @@
 package br.dev.azimute.calculadora.historico;
 
-import br.dev.azimute.comum.ErroDeNegocio;
+import br.dev.azimute.comum.ErroDeDadosInvalidos;
 
 import java.util.Map;
 
-/** Regras de valor da simulação (RN10), no mesmo formato da falha de Bean Validation. */
-final class DadosInvalidosException extends ErroDeNegocio {
+/** Regras de valor da simulação (RN10). */
+final class DadosInvalidosException extends ErroDeDadosInvalidos {
 
     DadosInvalidosException(Map<String, Object> campos) {
-        super("DADOS_INVALIDOS", "Há campos inválidos na requisição", Tipo.VALIDACAO, Map.of("campos", campos));
+        super(campos);
     }
 }

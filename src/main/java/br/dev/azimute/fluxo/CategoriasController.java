@@ -1,5 +1,6 @@
 package br.dev.azimute.fluxo;
 
+import br.dev.azimute.comum.CamposEditaveis;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /** Categorias de gasto (RF02–RF04). Exige token, como tudo sob {@code /api} (SEC01). */
@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequestMapping("/api/categorias")
 class CategoriasController {
 
-    private static final Set<String> CAMPOS_EDITAVEIS = Set.of("nome", "ativa");
+    private static final CamposEditaveis CAMPOS_EDITAVEIS = new CamposEditaveis("nome", "ativa");
 
     record CriarCategoriaRequest(@NotBlank String nome) {}
 
@@ -55,10 +55,7 @@ class CategoriasController {
     /** Corpo como mapa, para nomear o campo proibido e distinguir ausente de inválido (RF04). */
     @PatchMapping("/{id}")
     CategoriaResponse alterar(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
-        var proibidos = corpo.keySet().stream().filter(c -> !CAMPOS_EDITAVEIS.contains(c)).sorted().toList();
-        if (!proibidos.isEmpty()) {
-            throw new CampoNaoEditavelException(proibidos, "nome e ativa");
-        }
+        CAMPOS_EDITAVEIS.conferir(corpo, p -> new CampoNaoEditavelException(p, "nome e ativa"));
         var erros = new LinkedHashMap<String, Object>();
         var nome = corpo.get("nome");
         if (nome != null && !(nome instanceof String texto && !texto.isBlank())) {

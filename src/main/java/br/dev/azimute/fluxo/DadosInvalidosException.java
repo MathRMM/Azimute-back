@@ -1,13 +1,13 @@
 package br.dev.azimute.fluxo;
 
-import br.dev.azimute.comum.ErroDeNegocio;
+import br.dev.azimute.comum.ErroDeDadosInvalidos;
 
 import java.util.Map;
 
-/** Mesmo formato da falha de Bean Validation, para regras checadas fora das anotações. */
-final class DadosInvalidosException extends ErroDeNegocio {
+/** Regras do fluxo checadas fora das anotações. */
+final class DadosInvalidosException extends ErroDeDadosInvalidos {
 
     DadosInvalidosException(Map<String, Object> campos) {
-        super("DADOS_INVALIDOS", "Há campos inválidos na requisição", Tipo.VALIDACAO, Map.of("campos", campos));
+        super(campos);
     }
 }

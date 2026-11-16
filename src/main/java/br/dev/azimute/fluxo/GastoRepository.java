@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.TabelaDeGastos;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -30,25 +31,20 @@ class GastoRepository {
             FROM fluxo.gastos g JOIN fluxo.categorias c ON c.id = g.categoria_id""";
 
     private final JdbcClient jdbc;
+    private final TabelaDeGastos tabela;
 
-    GastoRepository(JdbcClient jdbc) {
+    GastoRepository(JdbcClient jdbc, TabelaDeGastos tabela) {
         this.jdbc = jdbc;
+        this.tabela = tabela;
     }
 
-    /**
-     * Grava com o ID do cliente. {@code false} quando o ID já existe, vivo ou excluído; quem decide é o serviço.
-     * {@code ON CONFLICT DO NOTHING} resolve a corrida entre dois envios simultâneos.
-     */
+    /** Grava com o ID do cliente. {@code false} quando o ID já existe, vivo ou excluído; quem decide é o serviço. */
     boolean inserirSeAusente(Gasto gasto) {
-        return jdbc.sql("""
-                        INSERT INTO fluxo.gastos (id, data, descricao, valor, categoria_id, forma, conta_id, holerite_id)
-                        VALUES (:id, :data, :descricao, :valor, :categoria, :forma, :conta, :holerite)
-                        ON CONFLICT DO NOTHING""")
-                .param("id", gasto.id().valor()).param("data", gasto.data()).param("descricao", gasto.descricao())
-                .param("valor", gasto.valor().valor()).param("categoria", gasto.categoria().valor())
-                .param("forma", gasto.forma().codigo()).param("conta", conta(gasto.forma()))
-                .param("holerite", holerite(gasto.forma()))
-                .update() == 1;
+        var forma = gasto.forma();
+        return tabela.inserirSeAusente(new TabelaDeGastos.Linha(gasto.id().valor(), gasto.data(), gasto.descricao(),
+                gasto.valor(), gasto.categoria(),
+                forma instanceof FormaPagamento.AVista a ? a.conta() : null,
+                forma instanceof FormaPagamento.DescontoEmFolha d ? d.holerite() : null));
     }
 
     Optional<Registro> buscar(GastoId id) {
@@ -72,8 +68,7 @@ class GastoRepository {
     }
 
     void excluir(GastoId id) {
-        jdbc.sql("UPDATE fluxo.gastos SET deleted_at = now(), updated_at = now() WHERE id = :id AND deleted_at IS NULL")
-                .param("id", id.valor()).update();
+        tabela.excluir(id.valor());
     }
 
     void restaurar(GastoId id) {
@@ -98,13 +93,6 @@ class GastoRepository {
         return switch (forma) {
             case FormaPagamento.AVista a -> a.conta().valor();
             case FormaPagamento.DescontoEmFolha d -> null;
-        };
-    }
-
-    private static UUID holerite(FormaPagamento forma) {
-        return switch (forma) {
-            case FormaPagamento.AVista a -> null;
-            case FormaPagamento.DescontoEmFolha d -> d.holerite().valor();
         };
     }
 
