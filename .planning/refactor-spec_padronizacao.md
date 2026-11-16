@@ -51,6 +51,7 @@
 | A8 | Leitores de campo do PATCH (texto, data, competência, valor, ID, enum) copiados em 6 controllers, já com divergência: o ID precisa vir como texto em `Gastos`, mas qualquer valor é aceito em `Ganhos` | `Contas`, `Historico`, `Gastos`, `Ganhos`, `Categorias`, `Folha` |
 | A9 | `@Digits(integer = 17, fraction = 2)` repetido 19 vezes | Requests e controllers |
 | A10 | `Instant` (20 usos) e `OffsetDateTime` (11 usos) misturados; conversão de `Timestamp` para `Instant` duplicada | `auth`, `calculadora/historico` |
+| A11 | Mensagens de campo em dois idiomas: as do Bean Validation saem com o texto padrão em inglês (`must not be null`, `numeric value out of bounds (<17 digits>.<2 digits> expected)`); as checadas à mão saem em português. Achado na caracterização da Fase 1 | Todos os Requests com anotação de validação |
 
 ### Uso de UUID (resposta registrada)
 
@@ -115,14 +116,15 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 **Objetivo:** fixar em teste o comportamento atual que as fases 2 a 5 vão tocar, antes de qualquer mudança.
 
 **Testes:**
-- [ ] Contrapartida → o `GET` e o `POST` de regras devolvem `percentual` como string em pontos (`"50.00"`), e o banco guarda a fração (`0.5000`).
-- [ ] Simulação → `taxaMensal` e `taxaAnual` saem no JSON com a mesma forma e escala de hoje.
-- [ ] Respostas com enum → `papel`, `tipo`, `origem`, `natureza` e `forma` saem com os mesmos textos de hoje.
-- [ ] PATCH → para cada campo de cada um dos 6 controllers, um valor inválido gera a mesma mensagem em `detalhes.campos`.
-- [ ] Valor com 3 casas → 422 no PUT e no PATCH. Nunca é arredondado.
-- [ ] Antes de escrever um teste novo, conferir se a cobertura já existe nos ITs atuais e reutilizar.
+- [x] Contrapartida → o `GET` e o `POST` de regras devolvem `percentualDaBasica` como string em pontos (`"75.50"`), e o banco guarda a fração (`0.7550`). (`CatalogoIT`)
+- [x] Simulação → `taxaMensal` e `taxaAnual` saem no JSON com a mesma forma e escala de hoje. (`HistoricoGravacaoIT`)
+- [x] Respostas com enum → `papel`, `tipo`, `origem`, `natureza` e `forma` saem com os mesmos textos de hoje. Já cobertos pelos ITs atuais (`HoleriteManualIT`, `HoleritePdfIT`, `GastosIT`, `MovimentacoesIT`, `CatalogoIT`, `HistoricoGravacaoIT`).
+- [x] PATCH → para cada campo de cada um dos 6 controllers, um valor inválido gera a mesma mensagem em `detalhes.campos`. As asserções `.exists()` passaram a comparar o texto exato.
+- [x] PUT, POST e Bean Validation → as mensagens atuais também ficaram fixadas, porque a Fase 5 troca o `@Digits` pela `@ValorMonetario`.
+- [x] Valor com 3 casas → 422 no PUT e no PATCH. Nunca é arredondado. (`GastosIT`, `GanhosIT`, `ContasIT`, `HoleriteManualIT`)
+- [x] Os ITs atuais foram reaproveitados: as mensagens foram capturadas da execução real e fixadas nos testes, sem nenhum IT novo.
 
-**Checklist:** 664+ testes verdes; nenhuma mudança em `src/main`.
+**Checklist:** 664 testes verdes; nenhuma mudança em `src/main`.
 
 ### Fase 2 — Valores em `comum`
 
@@ -191,6 +193,7 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - **Mensagens:** as de hoje, campo a campo, como fixado na Fase 1.
 - **Divergência do ID:** passa a exigir texto em todos os controllers. Não muda nada na prática, porque número JSON nunca forma um UUID válido.
 - **`@ValorMonetario`:** anotação composta em `plataforma.web` (módulo OPEN), com variantes positivo e não negativo. Substitui as 19 ocorrências de `@Digits(integer = 17, fraction = 2)`.
+- [PENDENTE: A11 — decidir com o usuário antes da Fase 5 se as mensagens do Bean Validation passam para português. Isso muda o texto das respostas de erro: os testes fixados na Fase 1 seriam atualizados de propósito, e o app precisa conferir se depende de algum texto.]
 - [PENDENTE: A10 — confirmar se `Instant` no domínio e `OffsetDateTime` na API é uma convenção ou uma mistura. Se for convenção, documentar e centralizar a conversão de `Timestamp`; se não for, definir a regra antes de mexer.]
 
 **Testes:**

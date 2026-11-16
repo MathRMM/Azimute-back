@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -113,16 +114,19 @@ class CatalogoIT {
         var inativa = api.id(api.enviar(post("/api/categorias"), Map.of("nome", "Antiga " + UUID.randomUUID())));
         api.enviar(patch("/api/categorias/" + inativa), Map.of("ativa", false)).andExpect(status().isOk());
 
+        var naturezas = "deve ser um de [PROVENTO, INSS, IRRF, PREVIDENCIA_BASICA, PREVIDENCIA_VOLUNTARIA, "
+                + "ADIANTAMENTO, GASTO, OUTRO_DESCONTO]";
         api.reclassificar(codigo, Map.of()).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.natureza").exists());
+                .andExpect(jsonPath("$.detalhes.campos.natureza").value(naturezas));
         api.reclassificar(codigo, Map.of("natureza", "BONUS")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.natureza").exists());
+                .andExpect(jsonPath("$.detalhes.campos.natureza").value(naturezas));
         api.reclassificar(codigo, Map.of("natureza", "GASTO")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.categoria").exists());
+                .andExpect(jsonPath("$.detalhes.campos.categoria").value("obrigatória na rubrica de gasto"));
         api.reclassificar(codigo, Map.of("natureza", "INSS", "categoria", inativa.toString()))
-                .andExpect(status().is(422)).andExpect(jsonPath("$.detalhes.campos.categoria").exists());
+                .andExpect(status().is(422)).andExpect(jsonPath("$.detalhes.campos.categoria")
+                        .value("só a rubrica de gasto tem categoria"));
         api.reclassificar(codigo, Map.of("natureza", "GASTO", "categoria", "x")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.categoria").exists());
+                .andExpect(jsonPath("$.detalhes.campos.categoria").value("deve ser um ID válido"));
         api.reclassificar(codigo, Map.of("natureza", "GASTO", "categoria", inativa.toString()))
                 .andExpect(status().is(422)).andExpect(jsonPath("$.erro").value("CATEGORIA_INATIVA"));
         api.reclassificar(codigo, Map.of("natureza", "GASTO", "categoria", UUID.randomUUID().toString()))
@@ -143,12 +147,17 @@ class CatalogoIT {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.aPartirDe").value(vigencia))
                 .andExpect(jsonPath("$.percentualDaBasica").value("75.50"));
+        // No banco a regra é fração (75,5% → 0.7550); na API, pontos (caracterização da Fase 1).
+        assertThat(jdbc.sql("SELECT percentual_da_basica FROM fluxo.regras_contrapartida WHERE a_partir_de = :d")
+                .param("d", java.time.LocalDate.parse(vigencia + "-01")).query(java.math.BigDecimal.class).single())
+                .isEqualByComparingTo("0.7550");
         api.enviar(post("/api/folha/contrapartida"), Map.of("aPartirDe", vigencia, "percentualDaBasica", "10"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.erro").value("REGRA_DE_CONTRAPARTIDA_EXISTENTE"));
         api.enviar(post("/api/folha/contrapartida"), Map.of("aPartirDe", "2026-13", "percentualDaBasica", "-1"))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.aPartirDe").exists())
-                .andExpect(jsonPath("$.detalhes.campos.percentualDaBasica").exists());
+                .andExpect(jsonPath("$.detalhes.campos.aPartirDe").value("deve estar no formato AAAA-MM"))
+                .andExpect(jsonPath("$.detalhes.campos.percentualDaBasica")
+                        .value("must be greater than or equal to 0"));
     }
 }

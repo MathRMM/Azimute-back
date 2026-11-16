@@ -105,6 +105,7 @@ class HistoricoGravacaoIT {
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.parcela").value("860.69"))
                 .andExpect(jsonPath("$.taxaMensal").value("0.03513493"))
+                .andExpect(jsonPath("$.taxaAnual").value("0.51343428"))
                 .andExpect(jsonPath("$.status").value("RECEBIDA"))
                 .andExpect(jsonPath("$.sincronizadaEm").exists());
 
@@ -188,7 +189,8 @@ class HistoricoGravacaoIT {
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("SNAPSHOT_DIVERGENTE"))
-                .andExpect(jsonPath("$.detalhes.campos.taxaMensal").exists());
+                .andExpect(jsonPath("$.detalhes.campos.taxaMensal.enviado").value("0.03520000"))
+                .andExpect(jsonPath("$.detalhes.campos.taxaMensal.esperado").value("0.03513493"));
         assertThat(quantidade()).isZero();
     }
 
@@ -199,7 +201,8 @@ class HistoricoGravacaoIT {
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("SNAPSHOT_DIVERGENTE"))
-                .andExpect(jsonPath("$.detalhes.campos.totalJuros").exists());
+                .andExpect(jsonPath("$.detalhes.campos.totalJuros.enviado").value("13554.85"))
+                .andExpect(jsonPath("$.detalhes.campos.totalJuros.esperado").value("13554.84"));
     }
 
     @Test
@@ -208,7 +211,8 @@ class HistoricoGravacaoIT {
         corpo.put("valorFinanciado", "17000.00");
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.valorFinanciado").exists());
+                .andExpect(jsonPath("$.detalhes.campos.valorFinanciado.enviado").value("17000.00"))
+                .andExpect(jsonPath("$.detalhes.campos.valorFinanciado.esperado").value("17430.00"));
     }
 
     @Test
@@ -217,7 +221,8 @@ class HistoricoGravacaoIT {
         corpo.put("taxaAnual", "0.51400000");
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.taxaAnual").exists());
+                .andExpect(jsonPath("$.detalhes.campos.taxaAnual.enviado").value("0.51400000"))
+                .andExpect(jsonPath("$.detalhes.campos.taxaAnual.esperado").value("0.51343428"));
     }
 
     @Test
@@ -321,7 +326,7 @@ class HistoricoGravacaoIT {
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.entrada").exists());
+                .andExpect(jsonPath("$.detalhes.campos.entrada").value("deve ser menor que o valor do bem"));
     }
 
     @Test
@@ -331,7 +336,7 @@ class HistoricoGravacaoIT {
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.prazo").exists());
+                .andExpect(jsonPath("$.detalhes.campos.prazo").value("must be greater than 0"));
     }
 
     @Test
@@ -341,7 +346,7 @@ class HistoricoGravacaoIT {
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.parcela").exists());
+                .andExpect(jsonPath("$.detalhes.campos.parcela").value("deve ser maior que zero"));
     }
 
     @Test
@@ -351,8 +356,8 @@ class HistoricoGravacaoIT {
         corpo.remove("calculadaEm");
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.bem").exists())
-                .andExpect(jsonPath("$.detalhes.campos.calculadaEm").exists());
+                .andExpect(jsonPath("$.detalhes.campos.bem").value("must not be blank"))
+                .andExpect(jsonPath("$.detalhes.campos.calculadaEm").value("must not be null"));
     }
 
     @Test

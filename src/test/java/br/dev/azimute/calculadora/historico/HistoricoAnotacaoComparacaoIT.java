@@ -155,10 +155,13 @@ class HistoricoAnotacaoComparacaoIT {
         anotar(id, "{\"status\":\"FECHADA\"}")
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.status").exists());
+                .andExpect(jsonPath("$.detalhes.campos.status").value("deve ser um de [RECEBIDA, DESCARTADA, ACEITA]"));
         anotar(id, "{\"status\":null}")
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.status").exists());
+                .andExpect(jsonPath("$.detalhes.campos.status").value("deve ser um de [RECEBIDA, DESCARTADA, ACEITA]"));
+        anotar(id, "{\"observacao\":5}")
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.detalhes.campos.observacao").value("deve ser texto"));
     }
 
     @Test
@@ -291,7 +294,7 @@ class HistoricoAnotacaoComparacaoIT {
         mvc.perform(get(COMPARAR))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.bem").exists());
+                .andExpect(jsonPath("$.detalhes.campos.bem").value("informe o bem a comparar"));
         mvc.perform(get(COMPARAR).param("bem", "  "))
                 .andExpect(status().is(422));
     }

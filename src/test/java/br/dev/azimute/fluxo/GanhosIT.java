@@ -87,17 +87,19 @@ class GanhosIT {
         registrar(UUID.randomUUID(), ganho("FREELA", "100", "100.01", nubank, "2026-09-30"))
                 .andExpect(status().is(422)).andExpect(jsonPath("$.erro").value("LIQUIDO_MAIOR_QUE_BRUTO"));
         registrar(UUID.randomUUID(), ganho("BONUS", "100", "100", nubank, "2026-09-30"))
-                .andExpect(status().is(422)).andExpect(jsonPath("$.detalhes.campos.tipo").exists());
+                .andExpect(status().is(422)).andExpect(jsonPath("$.detalhes.campos.tipo")
+                        .value("deve ser PLR, FREELA, REEMBOLSO ou OUTRO"));
         var invalido = ganho("FREELA", "1.234", "0", nubank, "2026-09-30");
         invalido.put("competencia", "2026-13");
         registrar(UUID.randomUUID(), invalido).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.bruto").exists())
-                .andExpect(jsonPath("$.detalhes.campos.liquido").exists())
-                .andExpect(jsonPath("$.detalhes.campos.competencia").exists());
+                .andExpect(jsonPath("$.detalhes.campos.bruto")
+                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"))
+                .andExpect(jsonPath("$.detalhes.campos.liquido").value("must be greater than 0"))
+                .andExpect(jsonPath("$.detalhes.campos.competencia").value("deve estar no formato AAAA-MM"));
         registrar(UUID.randomUUID(), Map.of("bruto", "10")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.descricao").exists())
-                .andExpect(jsonPath("$.detalhes.campos.conta").exists())
-                .andExpect(jsonPath("$.detalhes.campos.recebidoEm").exists());
+                .andExpect(jsonPath("$.detalhes.campos.descricao").value("must not be blank"))
+                .andExpect(jsonPath("$.detalhes.campos.conta").value("must not be null"))
+                .andExpect(jsonPath("$.detalhes.campos.recebidoEm").value("must not be null"));
         registrar(UUID.randomUUID(), ganho("FREELA", "100", "100", UUID.randomUUID(), "2026-09-30"))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.erro").value("CONTA_NAO_ENCONTRADA"));
         ClienteDeTeste.anonimo(contexto).perform(get(GANHOS).param("competencia", "2026-09"))
@@ -150,13 +152,18 @@ class GanhosIT {
         alterar(id, Map.of("competencia", "out", "descricao", " ", "tipo", "BONUS", "bruto", "-1", "liquido", "0",
                 "conta", "x", "recebidoEm", "ontem"))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.competencia").exists())
-                .andExpect(jsonPath("$.detalhes.campos.descricao").exists())
-                .andExpect(jsonPath("$.detalhes.campos.tipo").exists())
-                .andExpect(jsonPath("$.detalhes.campos.bruto").exists())
-                .andExpect(jsonPath("$.detalhes.campos.liquido").exists())
-                .andExpect(jsonPath("$.detalhes.campos.conta").exists())
-                .andExpect(jsonPath("$.detalhes.campos.recebidoEm").exists());
+                .andExpect(jsonPath("$.detalhes.campos.competencia").value("deve estar no formato AAAA-MM"))
+                .andExpect(jsonPath("$.detalhes.campos.descricao").value("deve ser texto não vazio"))
+                .andExpect(jsonPath("$.detalhes.campos.tipo").value("deve ser PLR, FREELA, REEMBOLSO ou OUTRO"))
+                .andExpect(jsonPath("$.detalhes.campos.bruto")
+                        .value("deve ser um valor positivo com até 2 casas decimais"))
+                .andExpect(jsonPath("$.detalhes.campos.liquido")
+                        .value("deve ser um valor positivo com até 2 casas decimais"))
+                .andExpect(jsonPath("$.detalhes.campos.conta").value("deve ser um ID válido"))
+                .andExpect(jsonPath("$.detalhes.campos.recebidoEm").value("deve estar no formato AAAA-MM-DD"));
+        alterar(id, Map.of("liquido", "1.234")).andExpect(status().is(422))
+                .andExpect(jsonPath("$.detalhes.campos.liquido")
+                        .value("deve ser um valor positivo com até 2 casas decimais"));
         alterar(UUID.randomUUID(), Map.of("descricao", "x")).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.erro").value("GANHO_NAO_ENCONTRADO"));
         saldo(nubank, "3850.00");
