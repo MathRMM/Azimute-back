@@ -1,6 +1,9 @@
 package br.dev.azimute.fluxo.folha;
 
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.fluxo.GanhoId;
+import br.dev.azimute.fluxo.GastoId;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -21,16 +24,30 @@ class EfeitosDoHoleriteTest {
 
     private final HoleriteId id = new HoleriteId(UUID.randomUUID());
 
+    /** T6: a referência v3 é o que impede a reaplicação de duplicar; ela não pode mudar nunca. */
+    @Test
+    void referencias_deterministicas_nao_mudam() {
+        var holerite = new HoleriteId(UUID.fromString("0190f3a0-0000-7000-8000-000000000001"));
+
+        assertThat(EfeitosDoHolerite.referencia(holerite, "GANHO"))
+                .isEqualTo(UUID.fromString("63cc8c81-aab4-3cd9-9ca0-343d40321877"));
+        assertThat(EfeitosDoHolerite.referencia(holerite, "LIQUIDO"))
+                .isEqualTo(UUID.fromString("2ef0802b-6f7c-39da-9c9b-299ee74fca92"));
+        assertThat(EfeitosDoHolerite.referencia(holerite, "GASTO:/507"))
+                .isEqualTo(UUID.fromString("7a19ba74-7843-36d3-87d2-5c45bd6b877b"));
+        assertThat(EfeitosDoHolerite.referencia(holerite, "GANHO").version()).isEqualTo(3);
+    }
+
     @Test
     void ganho_salario_com_bruto_dos_vencimentos_e_liquido_dos_dois_recebimentos() {
         var efeitos = calcular("50", HoleriteDeExemplo.rubricas(), null);
 
         assertThat(efeitos.ganho()).isEqualTo(new EfeitosDoHolerite.GanhoEsperado(
-                EfeitosDoHolerite.referencia(id, "GANHO"), Dinheiro.de("5000"), Dinheiro.de("3920")));
+                new GanhoId(EfeitosDoHolerite.referencia(id, "GANHO")), Dinheiro.de("5000"), Dinheiro.de("3920")));
         assertThat(efeitos.recebimentos()).containsExactly(
-                new EfeitosDoHolerite.RecebimentoEsperado(EfeitosDoHolerite.referencia(id, "ADIANTAMENTO"),
+                new EfeitosDoHolerite.RecebimentoEsperado(new RecebimentoId(EfeitosDoHolerite.referencia(id, "ADIANTAMENTO")),
                         "ADIANTAMENTO", Dinheiro.de("2500"), DIA_15, CONFIGURACAO.salario(), false),
-                new EfeitosDoHolerite.RecebimentoEsperado(EfeitosDoHolerite.referencia(id, "LIQUIDO"), "LIQUIDO",
+                new EfeitosDoHolerite.RecebimentoEsperado(new RecebimentoId(EfeitosDoHolerite.referencia(id, "LIQUIDO")), "LIQUIDO",
                         Dinheiro.de("1420"), DIA_30, CONFIGURACAO.salario(), false));
     }
 
@@ -50,7 +67,7 @@ class EfeitosDoHoleriteTest {
         var efeitos = calcular("50", HoleriteDeExemplo.rubricas(), null);
 
         assertThat(efeitos.gastos()).containsExactly(new EfeitosDoHolerite.GastoEsperado(
-                EfeitosDoHolerite.referencia(id, "GASTO:/507"), "/507", "Vale-Transporte", Dinheiro.de("300"),
+                new GastoId(EfeitosDoHolerite.referencia(id, "GASTO:/507")), "/507", "Vale-Transporte", Dinheiro.de("300"),
                 DIA_30, HoleriteDeExemplo.TRANSPORTE));
     }
 
@@ -84,7 +101,7 @@ class EfeitosDoHoleriteTest {
 
     @Test
     void adiantamento_lancado_antes_e_associado_com_o_proprio_id() {
-        var antecipado = UUID.randomUUID();
+        var antecipado = new RecebimentoId(UUID.randomUUID());
 
         var efeitos = calcular("50", HoleriteDeExemplo.rubricas(), antecipado);
 
@@ -120,14 +137,14 @@ class EfeitosDoHoleriteTest {
         assertThat(EfeitosDoHolerite.soma(NaturezaRubrica.PROVENTO, List.of(), CATALOGO)).isEqualTo(Dinheiro.ZERO);
     }
 
-    private EfeitosDoHolerite.Efeitos calcular(String contrapartida, List<RubricaLida> rubricas, UUID antecipado) {
+    private EfeitosDoHolerite.Efeitos calcular(String contrapartida, List<RubricaLida> rubricas, RecebimentoId antecipado) {
         return EfeitosDoHolerite.calcular(HoleriteDeExemplo.holerite(id, contrapartida), rubricas, CATALOGO,
                 CONFIGURACAO, antecipado);
     }
 
     private EfeitosDoHolerite.LancamentoEsperado lancamento(String papel, String valor,
                                                             br.dev.azimute.contas.ContaId conta) {
-        return new EfeitosDoHolerite.LancamentoEsperado(EfeitosDoHolerite.referencia(id, papel), papel,
+        return new EfeitosDoHolerite.LancamentoEsperado(new LancamentoDaFolhaId(EfeitosDoHolerite.referencia(id, papel)), papel,
                 Dinheiro.de(valor), DIA_30, conta);
     }
 }

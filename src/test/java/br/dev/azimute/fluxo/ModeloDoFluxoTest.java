@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -108,7 +109,7 @@ class ModeloDoFluxoTest {
     }
 
     private static Recebimento recebimento(String valor) {
-        return new Recebimento(UUID.randomUUID(), null, NOVEMBRO, Recebimento.Papel.ADIANTAMENTO, Dinheiro.de(valor),
+        return new Recebimento(new RecebimentoId(UUID.randomUUID()), null, NOVEMBRO, Recebimento.Papel.ADIANTAMENTO, Dinheiro.de(valor),
                 DIA, CONTA, true);
     }
 }

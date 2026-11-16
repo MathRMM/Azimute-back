@@ -64,7 +64,7 @@ class GanhosController {
 
     record RecebimentoResponse(UUID id, String papel, Dinheiro valor, LocalDate data, UUID conta) {
         static RecebimentoResponse de(Recebimento r) {
-            return new RecebimentoResponse(r.id(), r.papel().name(), r.valor(), r.data(), r.conta().valor());
+            return new RecebimentoResponse(r.id().valor(), r.papel().name(), r.valor(), r.data(), r.conta().valor());
         }
     }
 

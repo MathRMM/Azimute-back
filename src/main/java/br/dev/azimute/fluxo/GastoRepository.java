@@ -41,7 +41,7 @@ class GastoRepository {
     /** Grava com o ID do cliente. {@code false} quando o ID já existe, vivo ou excluído; quem decide é o serviço. */
     boolean inserirSeAusente(Gasto gasto) {
         var forma = gasto.forma();
-        return tabela.inserirSeAusente(new TabelaDeGastos.Linha(gasto.id().valor(), gasto.data(), gasto.descricao(),
+        return tabela.inserirSeAusente(new TabelaDeGastos.Linha(gasto.id(), gasto.data(), gasto.descricao(),
                 gasto.valor(), gasto.categoria(),
                 forma instanceof FormaPagamento.AVista a ? a.conta() : null,
                 forma instanceof FormaPagamento.DescontoEmFolha d ? d.holerite() : null));
@@ -68,7 +68,7 @@ class GastoRepository {
     }
 
     void excluir(GastoId id) {
-        tabela.excluir(id.valor());
+        tabela.excluir(id);
     }
 
     void restaurar(GastoId id) {

@@ -3,6 +3,9 @@ package br.dev.azimute.fluxo.folha;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
+import br.dev.azimute.fluxo.GanhoId;
+import br.dev.azimute.fluxo.GastoId;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -21,14 +24,14 @@ import java.util.UUID;
  */
 final class EfeitosDoHolerite {
 
-    record GanhoEsperado(UUID id, Dinheiro bruto, Dinheiro liquido) {}
+    record GanhoEsperado(GanhoId id, Dinheiro bruto, Dinheiro liquido) {}
 
-    record RecebimentoEsperado(UUID id, String papel, Dinheiro valor, LocalDate data, ContaId conta,
+    record RecebimentoEsperado(RecebimentoId id, String papel, Dinheiro valor, LocalDate data, ContaId conta,
                                boolean lancadoAntes) {}
 
-    record LancamentoEsperado(UUID id, String papel, Dinheiro valor, LocalDate data, ContaId conta) {}
+    record LancamentoEsperado(LancamentoDaFolhaId id, String papel, Dinheiro valor, LocalDate data, ContaId conta) {}
 
-    record GastoEsperado(UUID id, String codigo, String descricao, Dinheiro valor, LocalDate data,
+    record GastoEsperado(GastoId id, String codigo, String descricao, Dinheiro valor, LocalDate data,
                          CategoriaId categoria) {}
 
     record Efeitos(GanhoEsperado ganho, List<RecebimentoEsperado> recebimentos, List<LancamentoEsperado> lancamentos,
@@ -42,18 +45,18 @@ final class EfeitosDoHolerite {
      *                               nulo quando não há
      */
     static Efeitos calcular(Holerite holerite, List<RubricaLida> rubricas, Map<String, RubricaCatalogo> catalogo,
-                            ConfiguracaoFolha configuracao, UUID adiantamentoAntecipado) {
+                            ConfiguracaoFolha configuracao, RecebimentoId adiantamentoAntecipado) {
         var id = holerite.id();
         var recebimentos = new ArrayList<RecebimentoEsperado>();
         var adiantamento = soma(NaturezaRubrica.ADIANTAMENTO, rubricas, catalogo);
         if (adiantamento.positivo()) {
             var antecipado = adiantamentoAntecipado != null;
             recebimentos.add(new RecebimentoEsperado(antecipado ? adiantamentoAntecipado
-                    : referencia(id, "ADIANTAMENTO"), "ADIANTAMENTO", adiantamento, holerite.dataAdiantamento(),
+                    : new RecebimentoId(referencia(id, "ADIANTAMENTO")), "ADIANTAMENTO", adiantamento, holerite.dataAdiantamento(),
                     configuracao.salario(), antecipado));
         }
         if (holerite.liquido().positivo()) {
-            recebimentos.add(new RecebimentoEsperado(referencia(id, "LIQUIDO"), "LIQUIDO", holerite.liquido(),
+            recebimentos.add(new RecebimentoEsperado(new RecebimentoId(referencia(id, "LIQUIDO")), "LIQUIDO", holerite.liquido(),
                     holerite.dataLiquido(), configuracao.salario(), false));
         }
         var recebido = recebimentos.stream().map(RecebimentoEsperado::valor).reduce(Dinheiro.ZERO, Dinheiro::mais);
@@ -69,7 +72,7 @@ final class EfeitosDoHolerite {
         adicionar(lancamentos, id, "PREV_VOLUNTARIA",
                 soma(NaturezaRubrica.PREVIDENCIA_VOLUNTARIA, rubricas, catalogo), data, configuracao.previdencia());
 
-        return new Efeitos(new GanhoEsperado(referencia(id, "GANHO"), holerite.totalVencimentos(), recebido),
+        return new Efeitos(new GanhoEsperado(ganho(id), holerite.totalVencimentos(), recebido),
                 List.copyOf(recebimentos), List.copyOf(lancamentos), gastos(holerite, rubricas, catalogo));
     }
 
@@ -86,6 +89,11 @@ final class EfeitosDoHolerite {
         return UUID.nameUUIDFromBytes((holerite + ":" + papel).getBytes(StandardCharsets.UTF_8));
     }
 
+    /** O ganho {@code SALARIO} do holerite, pela referência {@code GANHO}. */
+    static GanhoId ganho(HoleriteId holerite) {
+        return new GanhoId(referencia(holerite, "GANHO"));
+    }
+
     /** Um gasto por código de rubrica de gasto; a mesma rubrica repetida soma. */
     private static List<GastoEsperado> gastos(Holerite holerite, List<RubricaLida> rubricas,
                                               Map<String, RubricaCatalogo> catalogo) {
@@ -97,7 +105,7 @@ final class EfeitosDoHolerite {
             var codigo = rubrica.codigo();
             var anterior = porCodigo.get(codigo);
             var valor = anterior == null ? valor(rubrica) : anterior.valor().mais(valor(rubrica));
-            porCodigo.put(codigo, new GastoEsperado(referencia(holerite.id(), "GASTO:" + codigo), codigo,
+            porCodigo.put(codigo, new GastoEsperado(new GastoId(referencia(holerite.id(), "GASTO:" + codigo)), codigo,
                     rubrica.descricao(), valor, holerite.dataLiquido(), catalogo.get(codigo).categoria()));
         }
         return List.copyOf(porCodigo.values());
@@ -106,7 +114,7 @@ final class EfeitosDoHolerite {
     private static void adicionar(List<LancamentoEsperado> lancamentos, HoleriteId holerite, String papel,
                                   Dinheiro valor, LocalDate data, ContaId conta) {
         if (valor != null && valor.positivo()) {
-            lancamentos.add(new LancamentoEsperado(referencia(holerite, papel), papel, valor, data, conta));
+            lancamentos.add(new LancamentoEsperado(new LancamentoDaFolhaId(referencia(holerite, papel)), papel, valor, data, conta));
         }
     }
 

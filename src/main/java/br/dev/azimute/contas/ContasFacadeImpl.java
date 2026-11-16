@@ -2,6 +2,7 @@ package br.dev.azimute.contas;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Uuid7;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -70,6 +71,6 @@ class ContasFacadeImpl implements ContasFacade {
     }
 
     private static MovimentacaoId novoId() {
-        return new MovimentacaoId(UUID.randomUUID());
+        return new MovimentacaoId(Uuid7.novo());
     }
 }
