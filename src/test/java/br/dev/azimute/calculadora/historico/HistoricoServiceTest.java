@@ -251,7 +251,7 @@ class HistoricoServiceTest {
     @Test
     void restaurar_excluida_devolve_a_simulacao() {
         var salva = proposta().salva(id);
-        when(repositorio.restaurar(id)).thenReturn(true);
+        when(repositorio.restaurar(id)).thenReturn(1);
         when(repositorio.buscar(id)).thenReturn(Optional.of(salva));
 
         assertThat(servico.restaurar(id)).isEqualTo(salva);
@@ -260,12 +260,12 @@ class HistoricoServiceTest {
     @Test
     void restaurar_viva_nao_muda_nada_e_inexistente_e_404() {
         var salva = proposta().salva(id);
-        when(repositorio.restaurar(id)).thenReturn(false);
+        when(repositorio.restaurar(id)).thenReturn(0);
         when(repositorio.buscar(id)).thenReturn(Optional.of(salva));
         assertThat(servico.restaurar(id)).isEqualTo(salva);
 
         var outro = new SimulacaoId(java.util.UUID.randomUUID());
-        when(repositorio.restaurar(outro)).thenReturn(false);
+        when(repositorio.restaurar(outro)).thenReturn(0);
         when(repositorio.buscar(outro)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> servico.restaurar(outro)).isInstanceOf(SimulacaoNaoEncontradaException.class);
     }

@@ -97,6 +97,35 @@ class HistoricoExclusaoIT {
     }
 
     @Test
+    void restaurar_estimativa_com_ancora_excluida_restaura_a_ancora_junto() throws Exception {
+        var ancora = salvar(UUID.randomUUID(), HistoricoGravacaoIT.proposta());
+        var estimativa = salvar(UUID.randomUUID(), HistoricoGravacaoIT.estimativa(ancora));
+        mvc.perform(delete(BASE + estimativa)).andExpect(status().isNoContent());
+        mvc.perform(delete(BASE + ancora)).andExpect(status().isNoContent());
+
+        mvc.perform(post(BASE + estimativa + "/restaurar")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(estimativa.toString()))
+                .andExpect(jsonPath("$.ancoraId").value(ancora.toString()));
+
+        mvc.perform(get(LISTA)).andExpect(jsonPath("$", hasSize(2)));
+        mvc.perform(delete(BASE + ancora)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erro").value("SIMULACAO_E_ANCORA"));
+    }
+
+    @Test
+    void restaurar_a_proposta_nao_traz_as_estimativas_excluidas() throws Exception {
+        var ancora = salvar(UUID.randomUUID(), HistoricoGravacaoIT.proposta());
+        var estimativa = salvar(UUID.randomUUID(), HistoricoGravacaoIT.estimativa(ancora));
+        mvc.perform(delete(BASE + estimativa)).andExpect(status().isNoContent());
+        mvc.perform(delete(BASE + ancora)).andExpect(status().isNoContent());
+
+        mvc.perform(post(BASE + ancora + "/restaurar")).andExpect(status().isOk());
+
+        mvc.perform(get(LISTA)).andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(ancora.toString()));
+    }
+
+    @Test
     void estimativa_nova_com_ancora_excluida_e_recusada() throws Exception {
         var ancora = salvar(UUID.randomUUID(), HistoricoGravacaoIT.proposta());
         mvc.perform(delete(BASE + ancora)).andExpect(status().isNoContent());

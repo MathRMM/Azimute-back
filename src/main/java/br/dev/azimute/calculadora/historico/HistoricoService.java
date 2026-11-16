@@ -78,7 +78,10 @@ public class HistoricoService {
         }
     }
 
-    /** Desfaz a exclusão lógica (RF41). Restaurar a que está viva não muda nada. */
+    /**
+     * Desfaz a exclusão lógica (RF41). Restaurar a que está viva não muda nada. Estimativa com a âncora excluída
+     * traz a âncora junto (decisão do usuário, 2026-11-16); restaurar a proposta não traz as estimativas.
+     */
     SimulacaoSalva restaurar(SimulacaoId id) {
         repositorio.restaurar(id);
         return repositorio.buscar(id).orElseThrow(() -> new SimulacaoNaoEncontradaException(id));

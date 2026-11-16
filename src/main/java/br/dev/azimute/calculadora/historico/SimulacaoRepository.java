@@ -112,11 +112,18 @@ class SimulacaoRepository {
                 .param("id", id.valor()).update() == 1;
     }
 
-    /** Desfaz a exclusão lógica. @return {@code false} se não havia o que restaurar */
-    boolean restaurar(SimulacaoId id) {
-        return jdbc.sql("UPDATE calculadora.simulacoes SET deleted_at = NULL, updated_at = now() "
-                        + "WHERE id = :id AND deleted_at IS NOT NULL")
-                .param("id", id.valor()).update() == 1;
+    /**
+     * Desfaz a exclusão lógica da simulação e, se ela é estimativa, também a da âncora: estimativa viva sempre tem
+     * a proposta de onde veio a taxa (RN11). Um comando só, para as duas voltarem juntas ou nenhuma.
+     *
+     * @return quantas linhas voltaram (0 se não havia o que restaurar)
+     */
+    int restaurar(SimulacaoId id) {
+        return jdbc.sql("""
+                        UPDATE calculadora.simulacoes SET deleted_at = NULL, updated_at = now()
+                        WHERE deleted_at IS NOT NULL
+                          AND (id = :id OR id = (SELECT ancora_id FROM calculadora.simulacoes WHERE id = :id))""")
+                .param("id", id.valor()).update();
     }
 
     /** Ordem: data mais recente primeiro. Filtro por bem ignora maiúsculas e espaços nas pontas. */
