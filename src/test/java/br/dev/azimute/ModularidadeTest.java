@@ -71,13 +71,12 @@ class ModularidadeTest {
                 .importPackages("br.dev.azimute.fluxo");
 
         // Só o pacote base é API do módulo; o subpacote folha é interno para o Spring Modulith (T1 do SPEC do fluxo).
-        // A lista cresce a cada fase do SPEC até FluxoFacade, ResumoMes, RegistrarGasto e os eventos.
         assertThat(classes.stream()
                 .filter(c -> c.getPackageName().equals("br.dev.azimute.fluxo"))
                 .filter(c -> c.isTopLevelClass() && c.getModifiers().contains(JavaModifier.PUBLIC))
                 .map(JavaClass::getSimpleName))
-                .containsExactlyInAnyOrder("GastoId", "GanhoId", "CategoriaId", "GastoLancado",
-                        "GanhoRegistrado");
+                .containsExactlyInAnyOrder("FluxoFacade", "ResumoMes", "RegistrarGasto", "GastoId", "GanhoId",
+                        "CategoriaId", "GastoLancado", "GanhoRegistrado");
     }
 
     @Test
