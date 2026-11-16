@@ -25,7 +25,7 @@ class ResumoRepository {
 
     /** Gastos à vista e em folha cuja data cai na competência (RN09). */
     List<GastoDoMes> gastos(Competencia competencia) {
-        var inicio = competencia.mes().atDay(1);
+        var inicio = competencia.primeiroDia();
         return jdbc.sql("""
                         SELECT g.categoria_id, c.nome, g.valor
                         FROM fluxo.gastos g JOIN fluxo.categorias c ON c.id = g.categoria_id
@@ -36,7 +36,7 @@ class ResumoRepository {
 
     /** Total de cada categoria nas 3 competências anteriores, juntas (RN17). */
     List<GastoDoMes> totaisDosTresMesesAnteriores(Competencia competencia) {
-        var inicio = competencia.mes().atDay(1);
+        var inicio = competencia.primeiroDia();
         return jdbc.sql("""
                         SELECT g.categoria_id, c.nome, sum(g.valor) AS valor
                         FROM fluxo.gastos g JOIN fluxo.categorias c ON c.id = g.categoria_id
@@ -51,7 +51,7 @@ class ResumoRepository {
         return new Dinheiro(jdbc.sql("""
                         SELECT coalesce(sum(liquido), 0) FROM fluxo.ganhos
                         WHERE competencia = :c AND deleted_at IS NULL""")
-                .param("c", competencia.mes().atDay(1)).query(java.math.BigDecimal.class).single());
+                .param("c", competencia.primeiroDia()).query(java.math.BigDecimal.class).single());
     }
 
     private static GastoDoMes mapear(ResultSet rs, int linha) throws SQLException {

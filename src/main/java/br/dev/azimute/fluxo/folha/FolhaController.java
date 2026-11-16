@@ -2,6 +2,7 @@ package br.dev.azimute.fluxo.folha;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Taxa;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
 import jakarta.validation.Valid;
@@ -57,7 +58,6 @@ class FolhaController {
 
     private static final String MES = "\\d{4}-(0[1-9]|1[0-2])";
     private static final String FORMATO_MES = "deve estar no formato AAAA-MM";
-    private static final BigDecimal CEM = BigDecimal.valueOf(100);
     static final long LIMITE_DO_PDF = 2L * 1024 * 1024;
     private static final byte[] ASSINATURA = "%PDF-".getBytes(StandardCharsets.US_ASCII);
 
@@ -193,7 +193,7 @@ class FolhaController {
     record RegraResponse(Competencia aPartirDe, String percentualDaBasica) {
         static RegraResponse de(RegraContrapartida r) {
             return new RegraResponse(r.aPartirDe(),
-                    r.percentual().setScale(2, RoundingMode.HALF_EVEN).toPlainString());
+                    r.percentualDaBasica().pontos().setScale(2, RoundingMode.HALF_EVEN).toPlainString());
         }
     }
 
@@ -289,17 +289,17 @@ class FolhaController {
     @PatchMapping("/holerites/{id}/previdencia")
     HoleriteResponse corrigirPrevidencia(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
         var valor = corpo.get("contrapartida");
-        BigDecimal decimal = null;
+        Dinheiro contrapartida = null;
         try {
-            decimal = valor == null ? null : new BigDecimal(valor.toString().strip());
-        } catch (NumberFormatException e) {
+            contrapartida = valor == null ? null : Dinheiro.exato(valor.toString());
+        } catch (IllegalArgumentException e) {
             // segue para o erro de campo abaixo
         }
-        if (decimal == null || decimal.signum() < 0 || decimal.stripTrailingZeros().scale() > 2) {
+        if (contrapartida == null || contrapartida.negativo()) {
             throw new DadosDaFolhaInvalidosException(Map.of("contrapartida",
                     "deve ser um valor de zero para cima com até 2 casas decimais"));
         }
-        return HoleriteResponse.de(holerites.corrigirContrapartida(new HoleriteId(id), new Dinheiro(decimal)));
+        return HoleriteResponse.de(holerites.corrigirContrapartida(new HoleriteId(id), contrapartida));
     }
 
     @PutMapping("/adiantamentos/{id}")
@@ -349,9 +349,8 @@ class FolhaController {
     @PostMapping("/contrapartida")
     @ResponseStatus(HttpStatus.CREATED)
     RegraResponse incluirRegra(@Valid @RequestBody RegraRequest corpo) {
-        var fracao = corpo.percentualDaBasica().divide(CEM);
-        return RegraResponse.de(contrapartidas.incluir(
-                new RegraContrapartida(Competencia.de(corpo.aPartirDe()), fracao)));
+        return RegraResponse.de(contrapartidas.incluir(new RegraContrapartida(
+                Competencia.de(corpo.aPartirDe()), Taxa.dePontos(corpo.percentualDaBasica()))));
     }
 
     private static NaturezaRubrica natureza(Object valor, Map<String, Object> erros) {

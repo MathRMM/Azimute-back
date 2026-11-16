@@ -78,7 +78,7 @@ class GastoRepository {
 
     /** Gastos vivos da competência pela {@code data} (RN09), do mais recente ao mais antigo (RF13). */
     List<GastoComCategoria> listar(Competencia competencia, CategoriaId categoria) {
-        var inicio = competencia.mes().atDay(1);
+        var inicio = competencia.primeiroDia();
         return jdbc.sql("SELECT " + COLUNAS + """
                          WHERE g.deleted_at IS NULL AND g.data >= :inicio AND g.data < :fim
                           AND (CAST(:categoria AS UUID) IS NULL OR g.categoria_id = :categoria)

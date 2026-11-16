@@ -37,7 +37,7 @@ public class TabelaDeRecebimentos {
                         INSERT INTO fluxo.recebimentos (id, ganho_id, competencia, papel, valor, data, conta_id,
                                                         lancado_antes)
                         VALUES (:id, :ganho, :competencia, :papel, :valor, :data, :conta, :antes)""")
-                .param("id", r.id()).param("ganho", r.ganho()).param("competencia", r.competencia().mes().atDay(1))
+                .param("id", r.id()).param("ganho", r.ganho()).param("competencia", r.competencia().primeiroDia())
                 .param("papel", r.papel()).param("valor", r.valor().valor()).param("data", r.data())
                 .param("conta", r.conta().valor()).param("antes", r.lancadoAntes())
                 .update();
