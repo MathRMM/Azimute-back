@@ -129,19 +129,19 @@ class ContasIT {
         semApelido.remove("apelido");
         criar(semApelido).andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.apelido").value("must not be blank"));
+                .andExpect(jsonPath("$.detalhes.campos.apelido").value("deve ser texto não vazio"));
 
         var tresCasas = nubank();
         tresCasas.put("saldoInicial", "10.005");
         criar(tresCasas).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detalhes.campos.saldoInicial")
-                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"));
+                        .value("deve ter até 2 casas decimais"));
 
         var limiteNegativo = nubank();
         limiteNegativo.put("limiteChequeEspecial", "-1");
         criar(limiteNegativo).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detalhes.campos.limiteChequeEspecial")
-                        .value("must be greater than or equal to 0"));
+                        .value("deve ser zero ou mais"));
     }
 
     @Test

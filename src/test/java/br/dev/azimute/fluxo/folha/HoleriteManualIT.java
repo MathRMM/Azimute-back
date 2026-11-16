@@ -107,12 +107,12 @@ class HoleriteManualIT {
 
         api.importar(invalido).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detalhes.campos.competencia").value("deve estar no formato AAAA-MM"))
-                .andExpect(jsonPath("$.detalhes.campos.bases").value("must not be null"))
+                .andExpect(jsonPath("$.detalhes.campos.bases").value("é obrigatório"))
                 .andExpect(jsonPath("$.detalhes.campos['rubricas[0].valorUnico']")
                         .value("informe vencimento ou desconto, só um"))
-                .andExpect(jsonPath("$.detalhes.campos['rubricas[1].codigo']").value("must not be blank"))
+                .andExpect(jsonPath("$.detalhes.campos['rubricas[1].codigo']").value("deve ser texto não vazio"))
                 .andExpect(jsonPath("$.detalhes.campos['rubricas[1].vencimento']")
-                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"));
+                        .value("deve ter até 2 casas decimais"));
     }
 
     @Test

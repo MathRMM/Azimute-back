@@ -1,6 +1,7 @@
 package br.dev.azimute.calculadora.historico;
 
 import br.dev.azimute.comum.CamposEditaveis;
+import br.dev.azimute.comum.LeitorDeCampos;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,26 +75,13 @@ class HistoricoController {
     }
 
     private static Anotacao lerAnotacao(Map<String, Object> corpo) {
-        var alteraObservacao = corpo.containsKey("observacao");
-        var observacao = corpo.get("observacao");
-        if (observacao != null && !(observacao instanceof String)) {
-            throw new DadosInvalidosException(Map.of("observacao", "deve ser texto"));
-        }
-
-        StatusSimulacao status = null;
-        if (corpo.containsKey("status")) {
-            status = lerStatus(corpo.get("status"));
-        }
+        var leitor = new LeitorDeCampos(corpo);
+        var observacao = leitor.texto("observacao");
+        // Status presente e nulo não é um status válido; já a observação nula apaga.
+        var status = corpo.containsKey("status") ? leitor.enumeracaoObrigatoria("status", StatusSimulacao.class) : null;
+        leitor.conferir(DadosInvalidosException::new);
         // Em branco vale como nula, como no PUT.
-        var texto = observacao == null || ((String) observacao).isBlank() ? null : ((String) observacao).strip();
-        return new Anotacao(alteraObservacao, texto, status);
-    }
-
-    private static StatusSimulacao lerStatus(Object valor) {
-        var validos = Arrays.stream(StatusSimulacao.values()).map(Enum::name).toList();
-        if (valor instanceof String texto && validos.contains(texto)) {
-            return StatusSimulacao.valueOf(texto);
-        }
-        throw new DadosInvalidosException(Map.of("status", "deve ser um de " + validos));
+        var texto = observacao == null || observacao.isBlank() ? null : observacao.strip();
+        return new Anotacao(corpo.containsKey("observacao"), texto, status);
     }
 }

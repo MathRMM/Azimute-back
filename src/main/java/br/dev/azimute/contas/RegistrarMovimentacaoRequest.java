@@ -1,5 +1,6 @@
 package br.dev.azimute.contas;
 
+import br.dev.azimute.plataforma.web.ValorMonetario;
 import br.dev.azimute.comum.Dinheiro;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -18,7 +19,7 @@ record RegistrarMovimentacaoRequest(
         @NotBlank String tipo,
         UUID origem,
         UUID destino,
-        @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal valor,
+        @NotNull @ValorMonetario.Positivo BigDecimal valor,
         @NotNull LocalDate data,
         String motivo) {
 

@@ -2,6 +2,7 @@ package br.dev.azimute.contas;
 
 import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.LeitorDeCampos;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -73,57 +72,15 @@ class ContasController {
         return ContaResponse.SaldoResponse.de(contas.saldo(new ContaId(id)));
     }
 
+    /** O limite segue as regras do POST: não negativo e no máximo 2 casas, sem arredondar. */
     private static AlteracaoConta lerAlteracao(Map<String, Object> corpo) {
-        var erros = new LinkedHashMap<String, Object>();
-        var apelido = texto(corpo, "apelido", erros);
-        var instituicao = texto(corpo, "instituicao", erros);
-        var funcao = funcao(corpo.get("funcao"), erros);
-        var limite = limite(corpo.get("limiteChequeEspecial"), erros);
-        var ativa = corpo.get("ativa");
-        if (ativa != null && !(ativa instanceof Boolean)) {
-            erros.put("ativa", "deve ser true ou false");
-        }
-        if (!erros.isEmpty()) {
-            throw new DadosInvalidosException(erros);
-        }
-        return new AlteracaoConta(apelido, instituicao, funcao, limite, (Boolean) ativa);
-    }
-
-    private static String texto(Map<String, Object> corpo, String campo, Map<String, Object> erros) {
-        var valor = corpo.get(campo);
-        if (valor == null || valor instanceof String) {
-            return (String) valor;
-        }
-        erros.put(campo, "deve ser texto");
-        return null;
-    }
-
-    private static Funcao funcao(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        var validas = Arrays.stream(Funcao.values()).map(Enum::name).toList();
-        if (valor instanceof String texto && validas.contains(texto)) {
-            return Funcao.valueOf(texto);
-        }
-        erros.put("funcao", "deve ser um de " + validas);
-        return null;
-    }
-
-    /** Mesmas regras do POST: não negativo e no máximo 2 casas, sem arredondar. */
-    private static Dinheiro limite(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            var dinheiro = Dinheiro.exato(valor.toString());
-            if (!dinheiro.negativo()) {
-                return dinheiro;
-            }
-        } catch (IllegalArgumentException e) {
-            // segue para o erro de campo abaixo
-        }
-        erros.put("limiteChequeEspecial", "deve ser um valor não negativo com até 2 casas decimais");
-        return null;
+        var leitor = new LeitorDeCampos(corpo);
+        var apelido = leitor.texto("apelido");
+        var instituicao = leitor.texto("instituicao");
+        var funcao = leitor.enumeracao("funcao", Funcao.class);
+        var limite = leitor.dinheiroNaoNegativo("limiteChequeEspecial");
+        var ativa = leitor.booleano("ativa");
+        leitor.conferir(DadosInvalidosException::new);
+        return new AlteracaoConta(apelido, instituicao, funcao, limite, ativa);
     }
 }

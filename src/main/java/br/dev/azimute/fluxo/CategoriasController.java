@@ -1,6 +1,7 @@
 package br.dev.azimute.fluxo;
 
 import br.dev.azimute.comum.CamposEditaveis;
+import br.dev.azimute.comum.LeitorDeCampos;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,18 +56,10 @@ class CategoriasController {
     @PatchMapping("/{id}")
     CategoriaResponse alterar(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
         CAMPOS_EDITAVEIS.conferir(corpo, p -> new CampoNaoEditavelException(p, "nome e ativa"));
-        var erros = new LinkedHashMap<String, Object>();
-        var nome = corpo.get("nome");
-        if (nome != null && !(nome instanceof String texto && !texto.isBlank())) {
-            erros.put("nome", "deve ser texto não vazio");
-        }
-        var ativa = corpo.get("ativa");
-        if (ativa != null && !(ativa instanceof Boolean)) {
-            erros.put("ativa", "deve ser true ou false");
-        }
-        if (!erros.isEmpty()) {
-            throw new DadosInvalidosException(erros);
-        }
-        return CategoriaResponse.de(categorias.alterar(new CategoriaId(id), (String) nome, (Boolean) ativa));
+        var leitor = new LeitorDeCampos(corpo);
+        var nome = leitor.textoNaoVazio("nome");
+        var ativa = leitor.booleano("ativa");
+        leitor.conferir(DadosInvalidosException::new);
+        return CategoriaResponse.de(categorias.alterar(new CategoriaId(id), nome, ativa));
     }
 }

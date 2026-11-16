@@ -336,7 +336,7 @@ class HistoricoGravacaoIT {
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("DADOS_INVALIDOS"))
-                .andExpect(jsonPath("$.detalhes.campos.prazo").value("must be greater than 0"));
+                .andExpect(jsonPath("$.detalhes.campos.prazo").value("deve ser maior que zero"));
     }
 
     @Test
@@ -356,8 +356,8 @@ class HistoricoGravacaoIT {
         corpo.remove("calculadaEm");
         salvar(UUID.randomUUID(), corpo)
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.bem").value("must not be blank"))
-                .andExpect(jsonPath("$.detalhes.campos.calculadaEm").value("must not be null"));
+                .andExpect(jsonPath("$.detalhes.campos.bem").value("deve ser texto não vazio"))
+                .andExpect(jsonPath("$.detalhes.campos.calculadaEm").value("é obrigatório"));
     }
 
     @Test

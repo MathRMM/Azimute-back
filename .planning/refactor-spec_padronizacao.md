@@ -221,11 +221,24 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - **Divergência do ID:** passa a exigir texto em todos os controllers. Não muda nada na prática, porque número JSON nunca forma um UUID válido.
 - **`@ValorMonetario`:** anotação composta em `plataforma.web` (módulo OPEN), com variantes positivo e não negativo. Substitui as 19 ocorrências de `@Digits(integer = 17, fraction = 2)`.
 - **A11, decidido:** as mensagens do Bean Validation passam para português, no mesmo tom das checadas à mão. O app ainda não existe e vai nascer do Swagger, então nada depende do texto em inglês. Os testes fixados na Fase 1 mudam de propósito, só nas mensagens em inglês.
-- [PENDENTE: A10 — confirmar se `Instant` no domínio e `OffsetDateTime` na API é uma convenção ou uma mistura. Se for convenção, documentar e centralizar a conversão de `Timestamp`; se não for, definir a regra antes de mexer.]
+- **A10, resolvido:** é convenção, não mistura. Todo `Instant` está no domínio e no repositório; todo `OffsetDateTime` está em resposta ou request da API, sempre no fuso de São Paulo. O que estava espalhado era a conversão e o fuso (o `ZoneId` repetido em 5 classes), e isso foi para `comum/Fuso`.
 
 **Testes:**
-- [ ] `LeitorDeCampos`: cada tipo com campo ausente (não muda), nulo, formato errado e valor no limite.
-- [ ] Os ITs de PATCH da Fase 1 continuam verdes sem nenhuma alteração.
+- [x] `LeitorDeCampos`: cada tipo com campo ausente (não muda), nulo, formato errado e valor no limite. (`LeitorDeCamposTest`)
+- [x] Os ITs de PATCH da Fase 1 continuam verdes sem nenhuma alteração.
+- [x] `Fuso`: o instante sai com o deslocamento de São Paulo, nulo continua nulo e o "hoje" não vira o dia seguinte com o relógio em UTC. (`FusoTest`)
+
+**Como ficou:**
+- **`LeitorDeCampos`** (`comum`): texto, texto não vazio, booleano, data, competência, dinheiro positivo e não negativo (com a mensagem padrão ou a do módulo), ID com a fábrica do tipo, enum (com a mensagem padrão `deve ser um de [...]`, a do módulo ou obrigatório). Acumula os erros na ordem de leitura; `erro(...)` e `temErro(...)` cobrem as regras entre campos da rubrica. Os 6 controllers usam o leitor, e os ajudantes privados de cada um saíram.
+- **`@ValorMonetario`** (`plataforma.web`), com `@ValorMonetario.Positivo` e `@ValorMonetario.NaoNegativo`: substitui as 19 ocorrências de `@Digits(integer = 17, fraction = 2)`. O `@Digits(integer = 5)` do percentual da contrapartida fica, porque não é dinheiro.
+- **Mensagens em português** (A11): `ValidationMessages.properties` com as mensagens padrão (`é obrigatório`, `deve ser texto não vazio`, `deve ser maior que zero`, `deve ser zero ou mais`), e `deve ter até 2 casas decimais` na `@ValorMonetario`. Os 7 ITs que fixavam o texto em inglês mudaram só nessas linhas.
+- **`Fuso`** (`comum`): `ZONA`, `naApi(Instant)` e `hoje(Clock)`. Usado no `AuthController`, `LimiteDeTentativas`, `SimulacaoResponse`, `ContaService`, `ConciliacaoService` e no `AzimuteApplication`.
+
+**Desvios do plano:**
+- **Histórico acumula os erros:** o PATCH de anotação parava no primeiro campo inválido. Com o leitor, `observacao` e `status` inválidos juntos saem os dois. Nenhum teste dependia disso.
+- **Leitura de `Timestamp` não foi para `comum`:** são duas linhas de `toInstant()` nos repositórios, e levar `java.sql` para `comum` misturaria JDBC no pacote de valores. A conversão que estava duplicada de verdade era a da API, e essa foi centralizada.
+
+**Checklist:** [x] `make test` com 733 testes, 0 falhas, gate do JaCoCo verde.
 
 ### Fase 6 — Regras como teste e documentação
 
@@ -280,6 +293,7 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 | UUID gerado no servidor | v7 (banco ou `Uuid7`) | Ordenável por criação, não fragmenta índice (doc 00) |
 | Idioma das mensagens de validação (A11) | Português em todas | O app nasce do Swagger; um idioma só facilita |
 | Taxas do histórico | Continuam `BigDecimal` | O snapshot aceita negativa para acumular o erro junto com os outros campos |
+| Datas e horas (A10) | `Instant` no domínio e no banco; `OffsetDateTime` em São Paulo na API, via `Fuso.naApi` | Já era a convenção de fato; faltava um lugar só para o fuso |
 
 ---
 
@@ -291,3 +305,4 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 | 1.1 | 2026-11-16 | Fase 1 concluída; A11 decidido (português); Fase 2 concluída, com os desvios do histórico e do `TaxaMensal` |
 | 1.2 | 2026-11-16 | Fase 3 concluída: `Identificador`, `Uuid7`, `RecebimentoId` e `LancamentoDaFolhaId` |
 | 1.3 | 2026-11-16 | Fase 4 concluída: enums de tipo, papel e forma; `TipoGanho` em `fluxo.tabelas` |
+| 1.4 | 2026-11-16 | Fase 5 concluída: `LeitorDeCampos`, `@ValorMonetario`, mensagens em português; A10 resolvido com `Fuso` |

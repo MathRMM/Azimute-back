@@ -1,12 +1,12 @@
 package br.dev.azimute.contas;
 
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Fuso;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 
 /**
@@ -16,7 +16,6 @@ import java.util.List;
 @Service
 class ConciliacaoService {
 
-    private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
 
     /** {@code criada} distingue a conciliação nova (201) do reenvio idêntico (200, T4). */
     record Resultado(Conciliacao conciliacao, boolean criada) {}
@@ -47,7 +46,7 @@ class ConciliacaoService {
         if (!conta.ativa()) {
             throw new ContaInativaException(id);
         }
-        var hoje = LocalDate.now(relogio.withZone(FUSO));
+        var hoje = Fuso.hoje(relogio);
         if (data.isAfter(hoje)) {
             throw new DataFuturaException(data, hoje);
         }
