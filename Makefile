@@ -9,7 +9,7 @@ SHELL := /bin/bash
 
 .PHONY: help setup dev start stop test test-watch test-unit test-integracao coverage dispositivo senha docs \
         conta transferir conciliar consolidado categorias categoria gasto gastos ganho ganhos \
-        folha-configurar adiantamento holerite holerite-manual holerites \
+        folha-configurar adiantamento holerite holerite-manual holerites resumo resumo-folha \
         migrate seed build deploy \
         docker-up docker-down docker-logs docker-up-hml docker-up-prod
 
@@ -39,6 +39,7 @@ help:
 	@echo "    make gastos         Lista os gastos de uma competência (AAAA-MM)"
 	@echo "    make ganho          Registra um ganho avulso já recebido (PLR, FREELA, REEMBOLSO, OUTRO)"
 	@echo "    make ganhos         Lista os ganhos de uma competência, com os recebimentos"
+	@echo "    make resumo         Resumo do mês: gasto por categoria (com a média de 3 meses), recebido e sobra"
 	@echo ""
 	@echo "  Folha (pedem o token do dispositivo, sem eco)"
 	@echo "    make folha-configurar Define as contas do salário, do FGTS e da previdência"
@@ -46,6 +47,7 @@ help:
 	@echo "    make holerite       Envia o PDF do holerite (caminho do arquivo; datas opcionais)"
 	@echo "    make holerite-manual Envia um holerite em JSON (padrão: exemplos/holerite-manual.json, fictício)"
 	@echo "    make holerites      Lista os holerites de um ano"
+	@echo "    make resumo-folha   Resumo anual da folha: impostos, previdência, FGTS e líquido, por mês e no ano"
 	@echo ""
 	@echo "    make start          Sobe app + postgres no perfil prod (docker compose)"
 	@echo "    make stop           Para os containers"
@@ -256,6 +258,19 @@ holerites:
 	read -p "Ano (Enter para o atual): " ANO; \
 	ANO=$${ANO:-$$(date +%Y)}; \
 	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/folha/holerites?ano=$$ANO" -H "Authorization: Bearer $$TOKEN"
+
+resumo:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Competência (AAAA-MM, Enter para o mês atual): " COMPETENCIA; \
+	COMPETENCIA=$${COMPETENCIA:-$$(date +%Y-%m)}; \
+	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/fluxo/resumo?competencia=$$COMPETENCIA" \
+	  -H "Authorization: Bearer $$TOKEN"
+
+resumo-folha:
+	@read -p "Token do dispositivo: " -s TOKEN; echo; \
+	read -p "Ano (Enter para o atual): " ANO; \
+	ANO=$${ANO:-$$(date +%Y)}; \
+	curl -s -w "\nHTTP %{http_code}\n" "$(API_FLUXO)/folha/resumo?ano=$$ANO" -H "Authorization: Bearer $$TOKEN"
 
 holerite-manual:
 	@read -p "Token do dispositivo: " -s TOKEN; echo; \

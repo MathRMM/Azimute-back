@@ -367,17 +367,17 @@ backend-azimute-core/
 - `ModularidadeTest`: fixa os oito tipos públicos de `fluxo`.
 
 **Testes (TDD):**
-- [ ] Resumo da folha → dois holerites no ano: totais por mês e do ano; previdência separada; impostos = INSS + IRRF; reclassificar uma rubrica de `OUTRO_DESCONTO` para `IRRF` muda o total de impostos (T10)
-- [ ] Resumo do mês → categoria com gastos em jul, ago e nada em set: média = (jul + ago + 0) / 3 (RN17); gasto em folha entra no total
-- [ ] Resumo do mês → competência vazia → tudo zero
-- [ ] Fachada → `registrarGasto` grava e lança a saída como o `PUT`; `resumoDoMes` igual ao endpoint
-- [ ] Modularidade → só os oito tipos de `fluxo` são públicos
-- [ ] Propriedade → para qualquer conjunto de gastos de uma competência, total gasto = Σ dos totais por categoria
+- [x] Resumo da folha → dois holerites no ano: totais por mês e do ano; previdência separada; impostos = INSS + IRRF; reclassificar uma rubrica de `OUTRO_DESCONTO` para `IRRF` muda o total de impostos (T10)
+- [x] Resumo do mês → categoria com gastos em jul, ago e nada em set: média = (jul + ago + 0) / 3 (RN17); gasto em folha entra no total
+- [x] Resumo do mês → competência vazia → tudo zero
+- [x] Fachada → `registrarGasto` grava e lança a saída como o `PUT`; `resumoDoMes` igual ao endpoint
+- [x] Modularidade → só os oito tipos de `fluxo` são públicos
+- [x] Propriedade → para qualquer conjunto de gastos de uma competência, total gasto = Σ dos totais por categoria
 
 **Checklist de validação:**
-- [ ] RF39, RF50, RF51, RN17 atendidos; critérios de aceitação do PRD revisados e marcados
-- [ ] Alvo `make resumo` testado rodando o `make`
-- [ ] Testes desta fase e das anteriores passando; gate de 90% passando
+- [x] RF39, RF50, RF51, RN17 atendidos; critérios de aceitação do PRD revisados e marcados
+- [x] Alvo `make resumo` testado rodando o `make`
+- [x] Testes desta fase e das anteriores passando; gate de 90% passando
 
 **Critério de avanço:** checklist completo → validação local de ponta a ponta e, quando o usuário pedir, PR da `feature/fluxo` para a `main`.
 

@@ -202,10 +202,12 @@ class FolhaController {
     private final AdiantamentoService adiantamentos;
     private final CatalogoService catalogo;
     private final ContrapartidaService contrapartidas;
+    private final ResumoFolhaService resumos;
 
     FolhaController(ConfiguracaoFolhaService configuracao, HoleriteService holerites,
                     AdiantamentoService adiantamentos, CatalogoService catalogo,
-                    ContrapartidaService contrapartidas) {
+                    ContrapartidaService contrapartidas, ResumoFolhaService resumos) {
+        this.resumos = resumos;
         this.configuracao = configuracao;
         this.holerites = holerites;
         this.adiantamentos = adiantamentos;
@@ -331,6 +333,12 @@ class FolhaController {
             throw new DadosDaFolhaInvalidosException(erros);
         }
         return RubricaCatalogoResponse.de(catalogo.reclassificar(codigo, natureza, categoria));
+    }
+
+    /** RF39: por mês e no ano, com o acumulado das contas FGTS e previdência. */
+    @GetMapping("/resumo")
+    ResumoFolhaService.Resumo resumo(@RequestParam int ano) {
+        return resumos.resumo(ano);
     }
 
     @GetMapping("/contrapartida")
