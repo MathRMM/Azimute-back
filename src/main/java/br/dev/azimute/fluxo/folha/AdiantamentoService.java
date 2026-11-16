@@ -3,11 +3,11 @@ package br.dev.azimute.fluxo.folha;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContasFacade;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 /**
  * RF34: o adiantamento lançado antes do holerite, na conta do salário. Ao importar o holerite da competência, ele é
@@ -34,7 +34,7 @@ class AdiantamentoService {
 
     /** Idempotente pelo ID do cliente. Sem data, vale a padrão da RN18. */
     @Transactional
-    Resultado registrar(UUID id, Competencia competencia, Dinheiro valor, LocalDate data) {
+    Resultado registrar(RecebimentoId id, Competencia competencia, Dinheiro valor, LocalDate data) {
         var conta = configuracao.exigir().salario();
         var novo = new AdiantamentoRepository.Adiantamento(id, competencia, "ADIANTAMENTO", valor,
                 DatasDoSalario.adiantamentoOu(data, competencia), conta, true);
@@ -51,7 +51,7 @@ class AdiantamentoService {
         if (adiantamentos.existeAntecipado(competencia)) {
             throw new AdiantamentoJaLancadoException(competencia);
         }
-        contas.registrarEntrada(conta, id, valor, novo.data());
+        contas.registrarEntrada(conta, id.valor(), valor, novo.data());
         adiantamentos.inserir(novo);
         return new Resultado(novo, true);
     }

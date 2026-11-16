@@ -4,6 +4,8 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.comum.Uuid7;
 import br.dev.azimute.contas.ContasFacade;
+import br.dev.azimute.fluxo.GastoId;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,7 +17,6 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Processamento do holerite (RF32, RF33, RF35b, RF38, RN10–RN15, RN19). O leitor de PDF e o lançamento manual
@@ -129,7 +130,7 @@ class HoleriteService {
         }
         var id = new HoleriteId(Uuid7.novo());
         // Sem data informada, o adiantamento lançado antes dá a data; sem ele, vale a padrão (RN18, RF34).
-        var antecipado = adiantamentos.antecipado(competencia, EfeitosDoHolerite.referencia(id, "GANHO"));
+        var antecipado = adiantamentos.antecipado(competencia, EfeitosDoHolerite.ganho(id));
         var adiantamento = dataAdiantamento != null ? dataAdiantamento
                 : antecipado.map(AdiantamentoRepository.Adiantamento::data)
                 .orElseGet(() -> DatasDoSalario.adiantamento(competencia));
@@ -153,9 +154,9 @@ class HoleriteService {
         efeitos.gastosVivos(id).forEach(efeitos::excluirGasto);
         for (var lancamento : efeitos.lancamentosVivos(id)) {
             efeitos.excluirLancamento(lancamento.id());
-            contas.excluirLancamento(lancamento.id());
+            contas.excluirLancamento(lancamento.id().valor());
         }
-        var ganho = EfeitosDoHolerite.referencia(id, "GANHO");
+        var ganho = EfeitosDoHolerite.ganho(id);
         efeitos.recebimentosVivos(ganho).forEach(this::retirar);
         efeitos.excluirGanho(ganho);
     }
@@ -192,19 +193,19 @@ class HoleriteService {
     private void aplicar(Holerite holerite) {
         var config = configuracao.exigir();
         var rubricas = holerites.rubricas(holerite.id());
-        var ganho = EfeitosDoHolerite.referencia(holerite.id(), "GANHO");
+        var ganho = EfeitosDoHolerite.ganho(holerite.id());
         var antecipado = adiantamentos.antecipado(holerite.competencia(), ganho)
                 .map(AdiantamentoRepository.Adiantamento::id).orElse(null);
         var esperado = EfeitosDoHolerite.calcular(holerite, rubricas, catalogo.mapa(), config, antecipado);
 
         efeitos.salvarGanho(ganho, holerite.competencia(), esperado.ganho().bruto(), esperado.ganho().liquido(),
                 holerite.id());
-        var recebimentos = new HashSet<UUID>();
+        var recebimentos = new HashSet<RecebimentoId>();
         for (var r : esperado.recebimentos()) {
             recebimentos.add(r.id());
             var existente = efeitos.recebimento(r.id());
             if (existente.isEmpty()) {
-                contas.registrarEntrada(r.conta(), r.id(), r.valor(), r.data());
+                contas.registrarEntrada(r.conta(), r.id().valor(), r.valor(), r.data());
                 efeitos.inserirRecebimento(r.id(), ganho, holerite.competencia(), r.papel(), r.valor(), r.data(),
                         r.conta());
             } else {
@@ -214,12 +215,12 @@ class HoleriteService {
         }
         efeitos.recebimentosVivos(ganho).stream().filter(r -> !recebimentos.contains(r.id())).forEach(this::retirar);
 
-        var lancamentos = new HashSet<UUID>();
+        var lancamentos = new HashSet<LancamentoDaFolhaId>();
         for (var l : esperado.lancamentos()) {
             lancamentos.add(l.id());
             var existente = efeitos.lancamento(l.id());
             if (existente.isEmpty()) {
-                contas.registrarEntrada(l.conta(), l.id(), l.valor(), l.data());
+                contas.registrarEntrada(l.conta(), l.id().valor(), l.valor(), l.data());
                 efeitos.inserirLancamento(l.id(), holerite.id(), l.papel(), l.valor(), l.data(), l.conta());
             } else {
                 ajustarNaConta(existente.get(), l.valor(), l.data(), l.conta());
@@ -229,12 +230,12 @@ class HoleriteService {
         for (var vivo : efeitos.lancamentosVivos(holerite.id())) {
             if (!lancamentos.contains(vivo.id())) {
                 efeitos.excluirLancamento(vivo.id());
-                contas.excluirLancamento(vivo.id());
+                contas.excluirLancamento(vivo.id().valor());
             }
         }
 
         // Gasto em folha não mexe em conta: o dinheiro nem chegou a ela.
-        var gastos = new HashSet<UUID>();
+        var gastos = new HashSet<GastoId>();
         for (var g : esperado.gastos()) {
             gastos.add(g.id());
             if (efeitos.gasto(g.id()).isEmpty()) {
@@ -247,23 +248,23 @@ class HoleriteService {
     }
 
     /** Linha que já existia: traz de volta da exclusão e acerta valor, data e conta pela fachada. */
-    private void ajustarNaConta(EfeitosRepository.Linha existente, Dinheiro valor, LocalDate data,
+    private void ajustarNaConta(EfeitosRepository.Linha<?> existente, Dinheiro valor, LocalDate data,
                                 br.dev.azimute.contas.ContaId conta) {
         if (existente.excluida()) {
-            contas.restaurarLancamento(existente.id());
+            contas.restaurarLancamento(existente.id().valor());
         }
         if (existente.excluida() || !existente.mesmosValores(valor, data, conta)) {
-            contas.alterarLancamento(existente.id(), conta, valor, data);
+            contas.alterarLancamento(existente.id().valor(), conta, valor, data);
         }
     }
 
     /** Recebimento que o holerite não gera mais: o antecipado é solto; os outros são excluídos com a entrada. */
-    private void retirar(EfeitosRepository.Linha recebimento) {
+    private void retirar(EfeitosRepository.Linha<RecebimentoId> recebimento) {
         if (recebimento.lancadoAntes()) {
             efeitos.soltarRecebimento(recebimento.id());
         } else {
             efeitos.excluirRecebimento(recebimento.id());
-            contas.excluirLancamento(recebimento.id());
+            contas.excluirLancamento(recebimento.id().valor());
         }
     }
 

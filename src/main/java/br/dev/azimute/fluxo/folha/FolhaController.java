@@ -5,6 +5,7 @@ import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.comum.Taxa;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Digits;
@@ -172,7 +173,7 @@ class FolhaController {
 
     record AdiantamentoResponse(UUID id, Competencia competencia, Dinheiro valor, LocalDate data, UUID conta) {
         static AdiantamentoResponse de(AdiantamentoRepository.Adiantamento a) {
-            return new AdiantamentoResponse(a.id(), a.competencia(), a.valor(), a.data(), a.conta().valor());
+            return new AdiantamentoResponse(a.id().valor(), a.competencia(), a.valor(), a.data(), a.conta().valor());
         }
     }
 
@@ -305,7 +306,7 @@ class FolhaController {
     @PutMapping("/adiantamentos/{id}")
     ResponseEntity<AdiantamentoResponse> adiantamento(@PathVariable UUID id,
                                                       @Valid @RequestBody AdiantamentoRequest corpo) {
-        var resultado = adiantamentos.registrar(id, Competencia.de(corpo.competencia()), new Dinheiro(corpo.valor()),
+        var resultado = adiantamentos.registrar(new RecebimentoId(id), Competencia.de(corpo.competencia()), new Dinheiro(corpo.valor()),
                 corpo.data());
         return ResponseEntity.status(resultado.criado() ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(AdiantamentoResponse.de(resultado.adiantamento()));

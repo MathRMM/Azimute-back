@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
 import br.dev.azimute.fluxo.tabelas.TabelaDeGanhos;
 import br.dev.azimute.fluxo.tabelas.TabelaDeRecebimentos;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -45,12 +46,12 @@ class GanhoRepository {
 
     /** {@code false} quando o ID já existe, vivo ou excluído; quem decide é o serviço. */
     boolean inserirSeAusente(Ganho ganho) {
-        return ganhos.inserirSeAusente(new TabelaDeGanhos.Linha(ganho.id().valor(), ganho.competencia(),
+        return ganhos.inserirSeAusente(new TabelaDeGanhos.Linha(ganho.id(), ganho.competencia(),
                 ganho.descricao(), ganho.tipo().name(), ganho.bruto(), ganho.liquido(), ganho.holerite()));
     }
 
     void inserirRecebimento(Recebimento r) {
-        recebimentos.inserir(new TabelaDeRecebimentos.Linha(r.id(), r.ganho() == null ? null : r.ganho().valor(),
+        recebimentos.inserir(new TabelaDeRecebimentos.Linha(r.id(), r.ganho(),
                 r.competencia(), r.papel().name(), r.valor(), r.data(), r.conta(), r.lancadoAntes()));
     }
 
@@ -80,7 +81,7 @@ class GanhoRepository {
                         SET competencia = :competencia, valor = :valor, data = :data, conta_id = :conta,
                             updated_at = now()
                         WHERE id = :id AND deleted_at IS NULL""")
-                .param("id", r.id()).param("competencia", r.competencia().primeiroDia()).param("valor", r.valor().valor())
+                .param("id", r.id().valor()).param("competencia", r.competencia().primeiroDia()).param("valor", r.valor().valor())
                 .param("data", r.data()).param("conta", r.conta().valor())
                 .update();
     }
@@ -90,7 +91,7 @@ class GanhoRepository {
                         UPDATE fluxo.recebimentos SET deleted_at = now(), updated_at = now()
                         WHERE ganho_id = :id AND deleted_at IS NULL""")
                 .param("id", id.valor()).update();
-        ganhos.excluir(id.valor());
+        ganhos.excluir(id);
     }
 
     void restaurar(GanhoId id) {
@@ -144,7 +145,7 @@ class GanhoRepository {
 
     private static Recebimento mapearRecebimento(ResultSet rs) throws SQLException {
         var ganho = rs.getObject("ganho_id", UUID.class);
-        return new Recebimento(rs.getObject("id", UUID.class), ganho == null ? null : new GanhoId(ganho),
+        return new Recebimento(new RecebimentoId(rs.getObject("id", UUID.class)), ganho == null ? null : new GanhoId(ganho),
                 competencia(rs, "competencia"), Recebimento.Papel.valueOf(rs.getString("papel")),
                 new Dinheiro(rs.getBigDecimal("valor")), rs.getObject("data", LocalDate.class),
                 new ContaId(rs.getObject("conta_id", UUID.class)), rs.getBoolean("lancado_antes"));

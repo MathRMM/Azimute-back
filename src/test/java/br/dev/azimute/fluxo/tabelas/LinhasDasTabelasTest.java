@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
+import br.dev.azimute.fluxo.GastoId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +45,7 @@ class LinhasDasTabelasTest {
     }
 
     private static TabelaDeGastos.Linha gasto(ContaId conta, HoleriteId holerite) {
-        return new TabelaDeGastos.Linha(UUID.randomUUID(), DIA, "Mercado", Dinheiro.de("10"), CATEGORIA, conta,
+        return new TabelaDeGastos.Linha(new GastoId(UUID.randomUUID()), DIA, "Mercado", Dinheiro.de("10"), CATEGORIA, conta,
                 holerite);
     }
 }

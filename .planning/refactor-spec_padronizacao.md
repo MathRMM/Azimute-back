@@ -170,11 +170,19 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
   - a `ContasFacade`, que continua com `UUID referencia`. Exceção documentada: `contas` não conhece os IDs de quem chama.
 
 **Testes:**
-- [ ] `Uuid7`: a versão é 7 e a variante é IETF; IDs gerados em sequência são crescentes; não há colisão em 100 mil gerações.
-- [ ] O holerite e a movimentação criada pela fachada nascem com UUID v7 (IT que lê a versão do ID gravado).
-- [ ] As referências v3 da folha continuam idênticas, para a reaplicação não duplicar nada.
+- [x] `Uuid7`: a versão é 7 e a variante é IETF; os 48 bits iniciais são o instante; IDs gerados em sequência são crescentes, inclusive no mesmo milissegundo; não há colisão em 100 mil gerações nem entre threads. (`Uuid7Test`)
+- [x] O holerite e a movimentação criada pela fachada nascem com UUID v7 (`HoleriteManualIT`, `ContasFacadeIT`).
+- [x] As referências v3 da folha continuam idênticas, fixadas com valores literais (`EfeitosDoHoleriteTest`).
 
-**Checklist:** nenhum `UUID.randomUUID()` sobra em código de produção fora do `DispositivoService` (que usa para o hash fictício, sem ser ID).
+**Como ficou:**
+- Os 9 `*Id` implementam `Identificador`; o `DispositivoId` ganhou o `toString`.
+- `RecebimentoId` (em `fluxo.tabelas`, público) e `LancamentoDaFolhaId` (em `fluxo.folha`) entram no `Recebimento`, nas linhas de `fluxo.tabelas`, no `AdiantamentoRepository`, no `EfeitosDoHolerite` e no `EfeitosRepository`. As tabelas recebem `GanhoId`, `GastoId` e `RecebimentoId`.
+- O `EfeitosRepository.Linha` virou genérico (`Linha<I extends Identificador>`), porque a mesma linha serve a recebimento, lançamento e gasto.
+- `EfeitosDoHolerite.referencia(...)` continua devolvendo `UUID` (é a derivação v3); quem usa embrulha no ID do tipo certo. `EfeitosDoHolerite.ganho(holerite)` substitui o `referencia(id, "GANHO")` repetido.
+- A `ContasFacade` continua com `UUID referencia`: quem chama passa `id.valor()`.
+- O JSON não muda: as respostas de adiantamento e de recebimento continuam com o UUID no campo `id`.
+
+**Checklist:** [x] nenhum `UUID.randomUUID()` sobra em código de produção fora do `DispositivoService` (hash fictício, sem ser ID); [x] `make test` com 704 testes, 0 falhas, gate do JaCoCo verde.
 
 ### Fase 4 — Enums no lugar de String
 
@@ -269,3 +277,4 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 |--------|------|-----------|
 | 1.0 | 2026-11-16 | Criação inicial, com a opção A para percentual e o levantamento de UUID |
 | 1.1 | 2026-11-16 | Fase 1 concluída; A11 decidido (português); Fase 2 concluída, com os desvios do histórico e do `TaxaMensal` |
+| 1.2 | 2026-11-16 | Fase 3 concluída: `Identificador`, `Uuid7`, `RecebimentoId` e `LancamentoDaFolhaId` |
