@@ -1,5 +1,6 @@
 package br.dev.azimute.fluxo;
 
+import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
@@ -28,7 +29,6 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /** Gastos (RF10–RF13, RF15). Exige token, como tudo sob {@code /api} (SEC01). */
@@ -36,7 +36,7 @@ import java.util.UUID;
 @RequestMapping("/api/gastos")
 class GastosController {
 
-    private static final Set<String> CAMPOS_EDITAVEIS = Set.of("data", "descricao", "valor", "categoria", "conta");
+    private static final CamposEditaveis CAMPOS_EDITAVEIS = new CamposEditaveis("data", "descricao", "valor", "categoria", "conta");
 
     /** Valor positivo com até 2 casas, sem arredondar (RN03). Data futura é aceita (RN08). */
     record RegistrarGastoRequest(
@@ -85,10 +85,7 @@ class GastosController {
     /** Corpo como mapa, para nomear o campo proibido e distinguir ausente de inválido (RF11). */
     @PatchMapping("/{id}")
     GastoResponse alterar(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
-        var proibidos = corpo.keySet().stream().filter(c -> !CAMPOS_EDITAVEIS.contains(c)).sorted().toList();
-        if (!proibidos.isEmpty()) {
-            throw new CampoNaoEditavelException(proibidos, "data, descrição, valor, categoria e conta");
-        }
+        CAMPOS_EDITAVEIS.conferir(corpo, p -> new CampoNaoEditavelException(p, "data, descrição, valor, categoria e conta"));
         return GastoResponse.de(gastos.alterar(new GastoId(id), lerAlteracao(corpo)));
     }
 

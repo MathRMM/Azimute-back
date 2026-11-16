@@ -4,6 +4,8 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.TabelaDeGanhos;
+import br.dev.azimute.fluxo.tabelas.TabelaDeRecebimentos;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -33,34 +35,24 @@ class GanhoRepository {
             "r.id, r.ganho_id, r.competencia, r.papel, r.valor, r.data, r.conta_id, r.lancado_antes";
 
     private final JdbcClient jdbc;
+    private final TabelaDeGanhos ganhos;
+    private final TabelaDeRecebimentos recebimentos;
 
-    GanhoRepository(JdbcClient jdbc) {
+    GanhoRepository(JdbcClient jdbc, TabelaDeGanhos ganhos, TabelaDeRecebimentos recebimentos) {
         this.jdbc = jdbc;
+        this.ganhos = ganhos;
+        this.recebimentos = recebimentos;
     }
 
     /** {@code false} quando o ID já existe, vivo ou excluído; quem decide é o serviço. */
     boolean inserirSeAusente(Ganho ganho) {
-        return jdbc.sql("""
-                        INSERT INTO fluxo.ganhos (id, competencia, descricao, tipo, bruto, liquido, holerite_id)
-                        VALUES (:id, :competencia, :descricao, :tipo, :bruto, :liquido, :holerite)
-                        ON CONFLICT DO NOTHING""")
-                .param("id", ganho.id().valor()).param("competencia", dia1(ganho.competencia()))
-                .param("descricao", ganho.descricao()).param("tipo", ganho.tipo().name())
-                .param("bruto", ganho.bruto().valor()).param("liquido", ganho.liquido().valor())
-                .param("holerite", ganho.holerite() == null ? null : ganho.holerite().valor())
-                .update() == 1;
+        return ganhos.inserirSeAusente(new TabelaDeGanhos.Linha(ganho.id().valor(), ganho.competencia(),
+                ganho.descricao(), ganho.tipo().name(), ganho.bruto(), ganho.liquido(), ganho.holerite()));
     }
 
     void inserirRecebimento(Recebimento r) {
-        jdbc.sql("""
-                        INSERT INTO fluxo.recebimentos (id, ganho_id, competencia, papel, valor, data, conta_id,
-                                                        lancado_antes)
-                        VALUES (:id, :ganho, :competencia, :papel, :valor, :data, :conta, :antes)""")
-                .param("id", r.id()).param("ganho", r.ganho() == null ? null : r.ganho().valor())
-                .param("competencia", dia1(r.competencia())).param("papel", r.papel().name())
-                .param("valor", r.valor().valor()).param("data", r.data()).param("conta", r.conta().valor())
-                .param("antes", r.lancadoAntes())
-                .update();
+        recebimentos.inserir(new TabelaDeRecebimentos.Linha(r.id(), r.ganho() == null ? null : r.ganho().valor(),
+                r.competencia(), r.papel().name(), r.valor(), r.data(), r.conta(), r.lancadoAntes()));
     }
 
     Optional<Registro> buscar(GanhoId id) {
@@ -99,8 +91,7 @@ class GanhoRepository {
                         UPDATE fluxo.recebimentos SET deleted_at = now(), updated_at = now()
                         WHERE ganho_id = :id AND deleted_at IS NULL""")
                 .param("id", id.valor()).update();
-        jdbc.sql("UPDATE fluxo.ganhos SET deleted_at = now(), updated_at = now() WHERE id = :id AND deleted_at IS NULL")
-                .param("id", id.valor()).update();
+        ganhos.excluir(id.valor());
     }
 
     void restaurar(GanhoId id) {

@@ -1,5 +1,6 @@
 package br.dev.azimute.contas;
 
+import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Dinheiro;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /** Contas e saldo (SPEC de contas §6.4). Exige token, como tudo sob {@code /api} (SEC01). */
@@ -26,8 +26,8 @@ import java.util.UUID;
 @RequestMapping("/api/contas")
 class ContasController {
 
-    private static final Set<String> CAMPOS_EDITAVEIS =
-            Set.of("apelido", "instituicao", "funcao", "limiteChequeEspecial", "ativa");
+    private static final CamposEditaveis CAMPOS_EDITAVEIS =
+            new CamposEditaveis("apelido", "instituicao", "funcao", "limiteChequeEspecial", "ativa");
 
     /** Visão central (RF06): os valores globais e o saldo de cada conta que os compõe. */
     record ConsolidadoResponse(Dinheiro posicaoGeral, Dinheiro dividas, Dinheiro saldoEmConta, Dinheiro bloqueado,
@@ -65,10 +65,7 @@ class ContasController {
      */
     @PatchMapping("/{id}")
     ContaResponse alterar(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
-        var proibidos = corpo.keySet().stream().filter(c -> !CAMPOS_EDITAVEIS.contains(c)).sorted().toList();
-        if (!proibidos.isEmpty()) {
-            throw new CampoNaoEditavelException(proibidos);
-        }
+        CAMPOS_EDITAVEIS.conferir(corpo, CampoNaoEditavelException::new);
         return ContaResponse.de(contas.alterar(new ContaId(id), lerAlteracao(corpo)));
     }
 

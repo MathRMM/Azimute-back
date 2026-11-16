@@ -4,6 +4,9 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
+import br.dev.azimute.fluxo.tabelas.TabelaDeGanhos;
+import br.dev.azimute.fluxo.tabelas.TabelaDeGastos;
+import br.dev.azimute.fluxo.tabelas.TabelaDeRecebimentos;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -32,28 +35,27 @@ class EfeitosRepository {
     }
 
     private final JdbcClient jdbc;
+    private final TabelaDeGanhos ganhos;
+    private final TabelaDeRecebimentos recebimentos;
+    private final TabelaDeGastos gastos;
 
-    EfeitosRepository(JdbcClient jdbc) {
+    EfeitosRepository(JdbcClient jdbc, TabelaDeGanhos ganhos, TabelaDeRecebimentos recebimentos,
+                      TabelaDeGastos gastos) {
         this.jdbc = jdbc;
+        this.ganhos = ganhos;
+        this.recebimentos = recebimentos;
+        this.gastos = gastos;
     }
 
     // ---- ganho SALARIO ----
 
     void salvarGanho(UUID id, Competencia competencia, Dinheiro bruto, Dinheiro liquido, HoleriteId holerite) {
-        jdbc.sql("""
-                        INSERT INTO fluxo.ganhos (id, competencia, descricao, tipo, bruto, liquido, holerite_id)
-                        VALUES (:id, :competencia, :descricao, 'SALARIO', :bruto, :liquido, :holerite)
-                        ON CONFLICT (id) DO UPDATE
-                        SET bruto = EXCLUDED.bruto, liquido = EXCLUDED.liquido, deleted_at = NULL, updated_at = now()""")
-                .param("id", id).param("competencia", competencia.mes().atDay(1))
-                .param("descricao", "Salário " + competencia).param("bruto", bruto.valor())
-                .param("liquido", liquido.valor()).param("holerite", holerite.valor())
-                .update();
+        ganhos.inserirOuReviver(new TabelaDeGanhos.Linha(id, competencia, "Salário " + competencia, "SALARIO", bruto,
+                liquido, holerite));
     }
 
     void excluirGanho(UUID id) {
-        jdbc.sql("UPDATE fluxo.ganhos SET deleted_at = now(), updated_at = now() WHERE id = :id AND deleted_at IS NULL")
-                .param("id", id).update();
+        ganhos.excluir(id);
     }
 
     // ---- recebimentos ----
@@ -74,13 +76,7 @@ class EfeitosRepository {
 
     void inserirRecebimento(UUID id, UUID ganho, Competencia competencia, String papel, Dinheiro valor,
                             LocalDate data, ContaId conta) {
-        jdbc.sql("""
-                        INSERT INTO fluxo.recebimentos (id, ganho_id, competencia, papel, valor, data, conta_id)
-                        VALUES (:id, :ganho, :competencia, :papel, :valor, :data, :conta)""")
-                .param("id", id).param("ganho", ganho).param("competencia", competencia.mes().atDay(1))
-                .param("papel", papel).param("valor", valor.valor()).param("data", data)
-                .param("conta", conta.valor())
-                .update();
+        recebimentos.inserir(new TabelaDeRecebimentos.Linha(id, ganho, competencia, papel, valor, data, conta, false));
     }
 
     /** Associa ao ganho, atualiza os valores e traz de volta se estava excluído. */
@@ -96,8 +92,7 @@ class EfeitosRepository {
     }
 
     void excluirRecebimento(UUID id) {
-        jdbc.sql("UPDATE fluxo.recebimentos SET deleted_at = now(), updated_at = now() WHERE id = :id")
-                .param("id", id).update();
+        recebimentos.excluir(id);
     }
 
     /** O adiantamento lançado antes volta a ser solto: não é excluído com o holerite (RF34, casos de borda). */
@@ -163,12 +158,7 @@ class EfeitosRepository {
 
     void inserirGasto(UUID id, HoleriteId holerite, String descricao, Dinheiro valor, LocalDate data,
                       CategoriaId categoria) {
-        jdbc.sql("""
-                        INSERT INTO fluxo.gastos (id, data, descricao, valor, categoria_id, forma, holerite_id)
-                        VALUES (:id, :data, :descricao, :valor, :categoria, 'DESCONTO_EM_FOLHA', :h)""")
-                .param("id", id).param("data", data).param("descricao", descricao).param("valor", valor.valor())
-                .param("categoria", categoria.valor()).param("h", holerite.valor())
-                .update();
+        gastos.inserirSeAusente(new TabelaDeGastos.Linha(id, data, descricao, valor, categoria, null, holerite));
     }
 
     /**
@@ -188,8 +178,7 @@ class EfeitosRepository {
     }
 
     void excluirGasto(UUID id) {
-        jdbc.sql("UPDATE fluxo.gastos SET deleted_at = now(), updated_at = now() WHERE id = :id")
-                .param("id", id).update();
+        gastos.excluir(id);
     }
 
     private static Linha linha(ResultSet rs, int n) throws SQLException {

@@ -1,5 +1,6 @@
 package br.dev.azimute.calculadora.historico;
 
+import br.dev.azimute.comum.CamposEditaveis;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -27,7 +27,7 @@ import java.util.UUID;
 @RequestMapping("/api/calculadora/historico")
 class HistoricoController {
 
-    private static final Set<String> CAMPOS_ANOTATIVOS = Set.of("observacao", "status");
+    private static final CamposEditaveis CAMPOS_ANOTATIVOS = new CamposEditaveis("observacao", "status");
 
     private final HistoricoService servico;
 
@@ -58,10 +58,7 @@ class HistoricoController {
      */
     @PatchMapping("/{id}")
     SimulacaoResponse anotar(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
-        var proibidos = corpo.keySet().stream().filter(c -> !CAMPOS_ANOTATIVOS.contains(c)).sorted().toList();
-        if (!proibidos.isEmpty()) {
-            throw new CampoNaoEditavelException(proibidos);
-        }
+        CAMPOS_ANOTATIVOS.conferir(corpo, CampoNaoEditavelException::new);
         return SimulacaoResponse.de(servico.anotar(new SimulacaoId(id), lerAnotacao(corpo)));
     }
 
