@@ -371,8 +371,8 @@ Hoje isso vale para: simulações salvas, gastos e ganhos, sessões de treino ma
 Cada agregado tem seu tipo de ID:
 
 ```java
-public record CartaoId(UUID valor) {}
-public record GastoId(UUID valor) {}
+public record CartaoId(UUID valor) implements Identificador {}
+public record GastoId(UUID valor) implements Identificador {}
 ```
 
 Verboso, e evita a categoria inteira de bug em que se passa um `UUID` de cartão onde se esperava um de gasto. O compilador pega.
@@ -403,7 +403,55 @@ spring.jackson.time-zone=America/Sao_Paulo
 
 E no container: `TZ=America/Sao_Paulo`. Toda virada de dia e de semana (missões, consistência, jobs) é calculada nesse fuso.
 
+No código, o fuso fica só em `comum/Fuso`. No domínio e no banco o instante é `Instant`. Na API ele sai como `OffsetDateTime` em São Paulo, por `Fuso.naApi(...)`, e o "hoje" vem de `Fuso.hoje(relogio)`.
+
 **Semana começa na segunda**, no padrão ISO. Vale para consistência, revisão e treino. A semana 1 do plano de treino é a semana do `inicio` do plano, e o `inicio` precisa ser uma segunda (constraint no banco).
+
+---
+
+## Convenções de valores e modelos
+
+Um padrão só para valores, IDs e modelos no projeto inteiro. O `PadroesDoCodigoTest` verifica as regras marcadas com ✔ no build: quem fugir delas recebe um teste falhando, e cada exceção está na própria regra, com o motivo.
+
+### Taxa ou Percentual
+
+| Tipo | Guarda | Use para |
+|------|--------|----------|
+| `Percentual` | inteiro de 0 a 100 | alocações que precisam somar exatamente 100 (reserva) |
+| `Taxa` | fração decimal, sem arredondar, nunca negativa | juros, contrapartida, qualquer taxa com casas |
+
+A `Taxa` nasce por `Taxa.dePontos("3.51")` ou `Taxa.deFracao(...)` e expõe `pontos()` e `fracao()`. A escala fica a cargo de quem grava.
+
+✔ `BigDecimal` cru não aparece em record de domínio: dinheiro é `Dinheiro`, taxa é `Taxa`. As exceções são:
+- os Requests de entrada, antes de validar;
+- os próprios tipos de `comum`;
+- o core de juros, espelhado no app;
+- a `referencia` da rubrica, que é quantidade, não dinheiro;
+- as taxas do `DadosSimulacao`, um snapshot que aceita negativa para acumular o erro junto com os outros campos.
+
+### Identificadores
+
+✔ Todo `*Id` é um record que implementa `Identificador` (`UUID valor()`), no módulo dono do agregado. O `comum` só tem o contrato.
+
+✔ ID gerado no servidor é v7: `DEFAULT uuidv7()` no banco ou `Uuid7.novo()` na aplicação, nunca `UUID.randomUUID()`. A única exceção é o hash fictício do `DispositivoService`. Ficam fora da regra:
+- o ID que vem do cliente, aceito em qualquer versão;
+- o v3 determinístico da folha.
+
+A `ContasFacade` recebe `UUID referencia` cru, porque `contas` não conhece os IDs de quem chama. Quem chama passa `id.valor()`.
+
+### Records e fábricas
+
+✔ Sem builders e sem setters. O record valida no construtor compacto, e a criação a partir de texto usa fábrica nomeada (`Dinheiro.de`, `Dinheiro.exato`, `Competencia.de`, `Taxa.dePontos`). Builder permitiria objeto pela metade. Para alterar, cria-se um valor novo.
+
+Valor fechado é enum, nunca `String`. O nome do enum é o mesmo do `CHECK` do banco, e há um teste por enum que confere isso.
+
+### Entrada da API
+
+- **PUT e POST:** Request com Bean Validation. Valor em reais usa `@ValorMonetario` (de qualquer sinal), `@ValorMonetario.Positivo` ou `@ValorMonetario.NaoNegativo`: no máximo 2 casas, nunca arredonda. As mensagens saem em português (`ValidationMessages.properties`).
+- **PATCH:** o corpo chega como mapa, para distinguir campo ausente de campo inválido.
+  - ✔ Os campos permitidos ficam num `CamposEditaveis`, que nomeia o campo proibido.
+  - Os valores são lidos pelo `LeitorDeCampos`. Ausente ou nulo não muda. Formato errado acumula a mensagem do campo, e no fim o módulo lança a sua `ErroDeDadosInvalidos`.
+- **Erros:** cada módulo estende as bases de `comum` (`ErroDeNegocio`, `ErroDeDadosInvalidos`, `ErroDeCampoNaoEditavel`), para o erro continuar sendo dele. O código e o formato ficam só na base.
 
 ---
 

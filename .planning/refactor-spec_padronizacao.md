@@ -245,11 +245,11 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 **Objetivo:** o padrão se mantém sozinho; quem fugir dele recebe um teste falhando.
 
 **Regras (ArchUnit, em `PadroesDoCodigoTest`):**
-- [ ] Todo record `*Id` implementa `Identificador`.
-- [ ] Nenhuma classe de produção chama `UUID.randomUUID()`, exceto o `DispositivoService` (hash fictício).
-- [ ] Nenhuma classe se chama `*Builder`, e nenhum record tem setter.
-- [ ] `BigDecimal` não aparece em record de domínio, fora de uma lista explícita: Requests de entrada, o core de juros, o `RubricaLida.referencia` e as taxas do `DadosSimulacao` (snapshot validado com acúmulo de erros).
-- [ ] Controllers não declaram `Set<String>` de campos editáveis (usam `CamposEditaveis`).
+- [x] Todo record `*Id` implementa `Identificador`.
+- [x] Nenhuma classe de produção chama `UUID.randomUUID()`, exceto o `DispositivoService` (hash fictício).
+- [x] Nenhuma classe se chama `*Builder`, e nenhum record tem setter.
+- [x] `BigDecimal` não aparece em record de domínio, fora de uma lista explícita: Requests de entrada, o core de juros, o `RubricaLida.referencia` e as taxas do `DadosSimulacao` (snapshot validado com acúmulo de erros).
+- [x] Controllers não declaram `Set<String>` de campos editáveis (usam `CamposEditaveis`).
 
 **Documentação:** seção "Convenções de valores e modelos" no `00-arquitetura.md`, cobrindo:
 - quando usar `Taxa` e quando usar `Percentual`;
@@ -258,6 +258,14 @@ Cada fase vira uma branch `refactor/padronizacao-fase-N`, com PR (não draft) e 
 - `LeitorDeCampos` e `@ValorMonetario`;
 - bases de erro e `CamposEditaveis`;
 - a exceção da `ContasFacade`.
+
+**Como ficou:**
+- **`PadroesDoCodigoTest`:** 6 testes, um por regra. O de setter ficou separado do de builder. Todas passaram de primeira, sem mudar código de produção: as fases anteriores já tinham deixado o padrão aplicado.
+- **Exceção a mais na regra de `BigDecimal`:** o `RubricaResponse.referencia`, que devolve a mesma quantidade do `RubricaLida.referencia`. Entram também os tipos de `comum` (`Dinheiro`, `Taxa`), que são os próprios valores.
+- **Regra dos controllers:** nenhum campo de controller pode ser `Set` ou `Collection`. É mais largo que só o `Set<String>`, mas hoje nenhum controller tem campo de coleção.
+- **Doc 00:** a seção nova fica depois de "Convenções transversais". Os exemplos de ID passaram a implementar `Identificador`, e o fuso ganhou a nota sobre o `Fuso`.
+
+**Checklist:** [x] `make test` com 739 testes, 0 falhas, gate do JaCoCo verde.
 
 ---
 
@@ -306,3 +314,4 @@ Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 5 → Fase 6
 | 1.2 | 2026-11-16 | Fase 3 concluída: `Identificador`, `Uuid7`, `RecebimentoId` e `LancamentoDaFolhaId` |
 | 1.3 | 2026-11-16 | Fase 4 concluída: enums de tipo, papel e forma; `TipoGanho` em `fluxo.tabelas` |
 | 1.4 | 2026-11-16 | Fase 5 concluída: `LeitorDeCampos`, `@ValorMonetario`, mensagens em português; A10 resolvido com `Fuso` |
+| 1.5 | 2026-11-16 | Fase 6 concluída: `PadroesDoCodigoTest` e a seção de convenções na doc 00. Todas as fases concluídas |
