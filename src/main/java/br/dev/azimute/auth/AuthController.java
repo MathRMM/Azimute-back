@@ -1,5 +1,6 @@
 package br.dev.azimute.auth;
 
+import br.dev.azimute.comum.Fuso;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -16,9 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,7 +34,6 @@ class AuthController {
 
     record DispositivoResponse(UUID id, String nome, OffsetDateTime criadoEm, OffsetDateTime ultimoUso, boolean atual) {}
 
-    private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
 
     private final DispositivoService servico;
     private final SenhaService senhas;
@@ -57,13 +55,9 @@ class AuthController {
     @GetMapping("/dispositivos")
     List<DispositivoResponse> listar(@AuthenticationPrincipal DispositivoAutenticado atual) {
         return servico.listar().stream()
-                .map(d -> new DispositivoResponse(d.id().valor(), d.nome(), noFuso(d.criadoEm()), noFuso(d.ultimoUso()),
+                .map(d -> new DispositivoResponse(d.id().valor(), d.nome(), Fuso.naApi(d.criadoEm()), Fuso.naApi(d.ultimoUso()),
                         d.id().equals(atual.id())))
                 .toList();
-    }
-
-    private static OffsetDateTime noFuso(Instant instante) {
-        return instante == null ? null : instante.atZone(FUSO).toOffsetDateTime();
     }
 
     /** Revoga todos os outros dispositivos; o desta requisição continua (RF35). */

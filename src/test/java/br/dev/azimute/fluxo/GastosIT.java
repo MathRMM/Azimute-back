@@ -141,7 +141,7 @@ class GastosIT {
         // Valor com 3 casas nunca é arredondado, nem no PUT nem no PATCH (caracterização da Fase 1).
         registrar(UUID.randomUUID(), gasto("10.555", "2026-09-05", mercado, nubank)).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detalhes.campos.valor")
-                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"));
+                        .value("deve ter até 2 casas decimais"));
         alterar(id, Map.of("conta", UUID.randomUUID().toString())).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.erro").value("CONTA_NAO_ENCONTRADA"));
         alterar(UUID.randomUUID(), Map.of("descricao", "x")).andExpect(status().isNotFound())
@@ -169,18 +169,18 @@ class GastosIT {
 
     @Test
     void validacao_do_corpo_e_401_sem_token() throws Exception {
-        var mensagens = Map.of("1.234", "numeric value out of bounds (<17 digits>.<2 digits> expected)",
-                "0", "must be greater than 0", "-5", "must be greater than 0");
+        var mensagens = Map.of("1.234", "deve ter até 2 casas decimais",
+                "0", "deve ser maior que zero", "-5", "deve ser maior que zero");
         for (var caso : mensagens.entrySet()) {
             registrar(UUID.randomUUID(), gasto(caso.getKey(), "2026-09-05", mercado, nubank))
                     .andExpect(status().is(422))
                     .andExpect(jsonPath("$.detalhes.campos.valor").value(caso.getValue()));
         }
         registrar(UUID.randomUUID(), Map.of("valor", "10")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.data").value("must not be null"))
-                .andExpect(jsonPath("$.detalhes.campos.descricao").value("must not be blank"))
-                .andExpect(jsonPath("$.detalhes.campos.categoria").value("must not be null"))
-                .andExpect(jsonPath("$.detalhes.campos.conta").value("must not be null"));
+                .andExpect(jsonPath("$.detalhes.campos.data").value("é obrigatório"))
+                .andExpect(jsonPath("$.detalhes.campos.descricao").value("deve ser texto não vazio"))
+                .andExpect(jsonPath("$.detalhes.campos.categoria").value("é obrigatório"))
+                .andExpect(jsonPath("$.detalhes.campos.conta").value("é obrigatório"));
         ClienteDeTeste.anonimo(contexto).perform(get("/api/gastos").param("competencia", "2026-09"))
                 .andExpect(status().isUnauthorized());
         assertThat(quantidadeDeGastos()).isZero();

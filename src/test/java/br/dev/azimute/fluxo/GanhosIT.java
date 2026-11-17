@@ -93,13 +93,13 @@ class GanhosIT {
         invalido.put("competencia", "2026-13");
         registrar(UUID.randomUUID(), invalido).andExpect(status().is(422))
                 .andExpect(jsonPath("$.detalhes.campos.bruto")
-                        .value("numeric value out of bounds (<17 digits>.<2 digits> expected)"))
-                .andExpect(jsonPath("$.detalhes.campos.liquido").value("must be greater than 0"))
+                        .value("deve ter até 2 casas decimais"))
+                .andExpect(jsonPath("$.detalhes.campos.liquido").value("deve ser maior que zero"))
                 .andExpect(jsonPath("$.detalhes.campos.competencia").value("deve estar no formato AAAA-MM"));
         registrar(UUID.randomUUID(), Map.of("bruto", "10")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.descricao").value("must not be blank"))
-                .andExpect(jsonPath("$.detalhes.campos.conta").value("must not be null"))
-                .andExpect(jsonPath("$.detalhes.campos.recebidoEm").value("must not be null"));
+                .andExpect(jsonPath("$.detalhes.campos.descricao").value("deve ser texto não vazio"))
+                .andExpect(jsonPath("$.detalhes.campos.conta").value("é obrigatório"))
+                .andExpect(jsonPath("$.detalhes.campos.recebidoEm").value("é obrigatório"));
         registrar(UUID.randomUUID(), ganho("FREELA", "100", "100", UUID.randomUUID(), "2026-09-30"))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.erro").value("CONTA_NAO_ENCONTRADA"));
         ClienteDeTeste.anonimo(contexto).perform(get(GANHOS).param("competencia", "2026-09"))

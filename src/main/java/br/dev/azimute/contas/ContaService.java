@@ -1,12 +1,12 @@
 package br.dev.azimute.contas;
 
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Fuso;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +17,6 @@ import java.util.Map;
 @Service
 class ContaService {
 
-    private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
 
     private final ContaRepository contas;
     private final ConciliacaoRepository conciliacoes;
@@ -108,6 +107,6 @@ class ContaService {
     }
 
     private LocalDate hoje() {
-        return LocalDate.now(relogio.withZone(FUSO));
+        return Fuso.hoje(relogio);
     }
 }

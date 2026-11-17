@@ -1,8 +1,10 @@
 package br.dev.azimute.fluxo;
 
+import br.dev.azimute.plataforma.web.ValorMonetario;
 import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.LeitorDeCampos;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
 import br.dev.azimute.fluxo.tabelas.TipoGanho;
@@ -28,9 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -53,8 +52,8 @@ class GanhosController {
             @NotBlank String descricao,
             @NotNull @Pattern(regexp = "SALARIO|PLR|FREELA|REEMBOLSO|OUTRO",
                     message = "deve ser PLR, FREELA, REEMBOLSO ou OUTRO") String tipo,
-            @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal bruto,
-            @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal liquido,
+            @NotNull @ValorMonetario.Positivo BigDecimal bruto,
+            @NotNull @ValorMonetario.Positivo BigDecimal liquido,
             @NotNull UUID conta,
             @NotNull LocalDate recebidoEm) {
 
@@ -125,95 +124,17 @@ class GanhosController {
         return ganhos.listar(mes).stream().map(GanhoResponse::de).toList();
     }
 
+    /** Os valores seguem as regras do PUT: positivos e no máximo 2 casas, sem arredondar (RN03). */
     private static AlteracaoGanho lerAlteracao(Map<String, Object> corpo) {
-        var erros = new LinkedHashMap<String, Object>();
-        var competencia = competencia(corpo.get("competencia"), erros);
-        var descricao = descricao(corpo.get("descricao"), erros);
-        var tipo = tipo(corpo.get("tipo"), erros);
-        var bruto = valor(corpo, "bruto", erros);
-        var liquido = valor(corpo, "liquido", erros);
-        var conta = conta(corpo.get("conta"), erros);
-        var recebidoEm = data(corpo.get("recebidoEm"), erros);
-        if (!erros.isEmpty()) {
-            throw new DadosInvalidosException(erros);
-        }
+        var leitor = new LeitorDeCampos(corpo);
+        var competencia = leitor.competencia("competencia");
+        var descricao = leitor.textoNaoVazio("descricao");
+        var tipo = leitor.enumeracao("tipo", TipoGanho.class, "deve ser PLR, FREELA, REEMBOLSO ou OUTRO");
+        var bruto = leitor.dinheiroPositivo("bruto");
+        var liquido = leitor.dinheiroPositivo("liquido");
+        var conta = leitor.id("conta", ContaId::new);
+        var recebidoEm = leitor.data("recebidoEm");
+        leitor.conferir(DadosInvalidosException::new);
         return new AlteracaoGanho(competencia, descricao, tipo, bruto, liquido, conta, recebidoEm);
-    }
-
-    private static Competencia competencia(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            return Competencia.de(valor.toString());
-        } catch (IllegalArgumentException e) {
-            erros.put("competencia", "deve estar no formato AAAA-MM");
-            return null;
-        }
-    }
-
-    private static String descricao(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        if (valor instanceof String texto && !texto.isBlank()) {
-            return texto;
-        }
-        erros.put("descricao", "deve ser texto não vazio");
-        return null;
-    }
-
-    private static TipoGanho tipo(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        var validos = Arrays.stream(TipoGanho.values()).map(Enum::name).toList();
-        if (validos.contains(valor.toString())) {
-            return TipoGanho.valueOf(valor.toString());
-        }
-        erros.put("tipo", "deve ser PLR, FREELA, REEMBOLSO ou OUTRO");
-        return null;
-    }
-
-    /** Mesmas regras do PUT: positivo e no máximo 2 casas, sem arredondar (RN03). */
-    private static Dinheiro valor(Map<String, Object> corpo, String campo, Map<String, Object> erros) {
-        var valor = corpo.get(campo);
-        if (valor == null) {
-            return null;
-        }
-        try {
-            var dinheiro = Dinheiro.exato(valor.toString());
-            if (dinheiro.positivo()) {
-                return dinheiro;
-            }
-        } catch (IllegalArgumentException e) {
-            // segue para o erro de campo abaixo
-        }
-        erros.put(campo, "deve ser um valor positivo com até 2 casas decimais");
-        return null;
-    }
-
-    private static ContaId conta(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            return new ContaId(UUID.fromString(valor.toString()));
-        } catch (IllegalArgumentException e) {
-            erros.put("conta", "deve ser um ID válido");
-            return null;
-        }
-    }
-
-    private static LocalDate data(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(valor.toString());
-        } catch (DateTimeParseException e) {
-            erros.put("recebidoEm", "deve estar no formato AAAA-MM-DD");
-            return null;
-        }
     }
 }

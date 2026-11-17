@@ -1,5 +1,6 @@
 package br.dev.azimute.contas;
 
+import br.dev.azimute.plataforma.web.ValorMonetario;
 import br.dev.azimute.comum.Dinheiro;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -18,9 +19,9 @@ record CriarContaRequest(
         @NotBlank String instituicao,
         @NotNull TipoConta tipo,
         @NotNull Funcao funcao,
-        @NotNull @Digits(integer = 17, fraction = 2) BigDecimal saldoInicial,
+        @NotNull @ValorMonetario BigDecimal saldoInicial,
         LocalDate dataSaldoInicial,
-        @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal limiteChequeEspecial) {
+        @ValorMonetario.NaoNegativo BigDecimal limiteChequeEspecial) {
 
     NovaConta paraDominio() {
         return new NovaConta(apelido, instituicao, tipo, funcao, new Dinheiro(saldoInicial), dataSaldoInicial,

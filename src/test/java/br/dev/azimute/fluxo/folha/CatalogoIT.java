@@ -158,6 +158,6 @@ class CatalogoIT {
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.detalhes.campos.aPartirDe").value("deve estar no formato AAAA-MM"))
                 .andExpect(jsonPath("$.detalhes.campos.percentualDaBasica")
-                        .value("must be greater than or equal to 0"));
+                        .value("deve ser zero ou mais"));
     }
 }

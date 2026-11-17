@@ -1,10 +1,10 @@
 package br.dev.azimute.calculadora.historico;
 
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.Fuso;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.UUID;
 
 /**
@@ -33,8 +33,6 @@ record SimulacaoResponse(
         OffsetDateTime calculadaEm,
         OffsetDateTime sincronizadaEm) {
 
-    private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
-
     static SimulacaoResponse de(SimulacaoSalva s) {
         var d = s.dados();
         return new SimulacaoResponse(
@@ -44,7 +42,7 @@ record SimulacaoResponse(
                 d.totalPago(), d.totalJuros(), d.origem(),
                 d.ancoraId() == null ? null : d.ancoraId().valor(),
                 d.observacao(), s.status(),
-                d.calculadaEm().atZone(FUSO).toOffsetDateTime(),
-                s.sincronizadaEm().atZone(FUSO).toOffsetDateTime());
+                Fuso.naApi(d.calculadaEm()),
+                Fuso.naApi(s.sincronizadaEm()));
     }
 }

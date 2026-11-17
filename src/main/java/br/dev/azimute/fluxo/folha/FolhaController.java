@@ -1,7 +1,9 @@
 package br.dev.azimute.fluxo.folha;
 
+import br.dev.azimute.plataforma.web.ValorMonetario;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.LeitorDeCampos;
 import br.dev.azimute.comum.Taxa;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.CategoriaId;
@@ -42,7 +44,6 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,6 +60,7 @@ class FolhaController {
 
     private static final String MES = "\\d{4}-(0[1-9]|1[0-2])";
     private static final String FORMATO_MES = "deve estar no formato AAAA-MM";
+    private static final String CONTRAPARTIDA = "deve ser um valor de zero para cima com até 2 casas decimais";
     static final long LIMITE_DO_PDF = 2L * 1024 * 1024;
     private static final byte[] ASSINATURA = "%PDF-".getBytes(StandardCharsets.US_ASCII);
 
@@ -74,9 +76,9 @@ class FolhaController {
     record RubricaRequest(
             @NotBlank String codigo,
             @NotBlank String descricao,
-            @Digits(integer = 17, fraction = 2) BigDecimal referencia,
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal vencimento,
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal desconto) {
+            @ValorMonetario BigDecimal referencia,
+            @ValorMonetario.NaoNegativo BigDecimal vencimento,
+            @ValorMonetario.NaoNegativo BigDecimal desconto) {
 
         @AssertTrue(message = "informe vencimento ou desconto, só um")
         boolean isValorUnico() {
@@ -90,11 +92,11 @@ class FolhaController {
     }
 
     record BasesRequest(
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal salarioBase,
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal baseInss,
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal baseFgts,
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal fgtsMes,
-            @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal baseIrrf) {
+            @ValorMonetario.NaoNegativo BigDecimal salarioBase,
+            @ValorMonetario.NaoNegativo BigDecimal baseInss,
+            @ValorMonetario.NaoNegativo BigDecimal baseFgts,
+            @ValorMonetario.NaoNegativo BigDecimal fgtsMes,
+            @ValorMonetario.NaoNegativo BigDecimal baseIrrf) {
 
         BasesLidas paraDominio() {
             return new BasesLidas(dinheiro(salarioBase), dinheiro(baseInss), dinheiro(baseFgts), dinheiro(fgtsMes),
@@ -106,9 +108,9 @@ class FolhaController {
     record HoleriteManualRequest(
             @NotNull @Pattern(regexp = MES, message = FORMATO_MES) String competencia,
             @NotEmpty List<@Valid @NotNull RubricaRequest> rubricas,
-            @NotNull @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal totalVencimentos,
-            @NotNull @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal totalDescontos,
-            @NotNull @PositiveOrZero @Digits(integer = 17, fraction = 2) BigDecimal liquido,
+            @NotNull @ValorMonetario.NaoNegativo BigDecimal totalVencimentos,
+            @NotNull @ValorMonetario.NaoNegativo BigDecimal totalDescontos,
+            @NotNull @ValorMonetario.NaoNegativo BigDecimal liquido,
             @NotNull @Valid BasesRequest bases,
             LocalDate dataAdiantamento,
             LocalDate dataLiquido) {
@@ -168,7 +170,7 @@ class FolhaController {
 
     record AdiantamentoRequest(
             @NotNull @Pattern(regexp = MES, message = FORMATO_MES) String competencia,
-            @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal valor,
+            @NotNull @ValorMonetario.Positivo BigDecimal valor,
             LocalDate data) {}
 
     record AdiantamentoResponse(UUID id, Competencia competencia, Dinheiro valor, LocalDate data, UUID conta) {
@@ -289,17 +291,12 @@ class FolhaController {
     /** RF35b: corrige a contrapartida gravada de um holerite (zero ou mais, até 2 casas). */
     @PatchMapping("/holerites/{id}/previdencia")
     HoleriteResponse corrigirPrevidencia(@PathVariable UUID id, @RequestBody Map<String, Object> corpo) {
-        var valor = corpo.get("contrapartida");
-        Dinheiro contrapartida = null;
-        try {
-            contrapartida = valor == null ? null : Dinheiro.exato(valor.toString());
-        } catch (IllegalArgumentException e) {
-            // segue para o erro de campo abaixo
+        var leitor = new LeitorDeCampos(corpo);
+        var contrapartida = leitor.dinheiroNaoNegativo("contrapartida", CONTRAPARTIDA);
+        if (contrapartida == null) {
+            leitor.erro("contrapartida", CONTRAPARTIDA);
         }
-        if (contrapartida == null || contrapartida.negativo()) {
-            throw new DadosDaFolhaInvalidosException(Map.of("contrapartida",
-                    "deve ser um valor de zero para cima com até 2 casas decimais"));
-        }
+        leitor.conferir(DadosDaFolhaInvalidosException::new);
         return HoleriteResponse.de(holerites.corrigirContrapartida(new HoleriteId(id), contrapartida));
     }
 
@@ -320,19 +317,15 @@ class FolhaController {
     /** RF35, RN13: só a rubrica de gasto tem categoria, e sempre tem. */
     @PatchMapping("/rubricas")
     RubricaCatalogoResponse reclassificar(@RequestParam String codigo, @RequestBody Map<String, Object> corpo) {
-        var erros = new LinkedHashMap<String, Object>();
-        var natureza = natureza(corpo.get("natureza"), erros);
-        var categoria = categoria(corpo.get("categoria"), erros);
-        if (natureza != null && erros.isEmpty()) {
-            if (natureza == NaturezaRubrica.GASTO && categoria == null) {
-                erros.put("categoria", "obrigatória na rubrica de gasto");
-            } else if (natureza != NaturezaRubrica.GASTO && categoria != null) {
-                erros.put("categoria", "só a rubrica de gasto tem categoria");
-            }
+        var leitor = new LeitorDeCampos(corpo);
+        var natureza = leitor.enumeracaoObrigatoria("natureza", NaturezaRubrica.class);
+        var categoria = leitor.id("categoria", CategoriaId::new);
+        if (natureza == NaturezaRubrica.GASTO && categoria == null && !leitor.temErro("categoria")) {
+            leitor.erro("categoria", "obrigatória na rubrica de gasto");
+        } else if (natureza != null && natureza != NaturezaRubrica.GASTO && categoria != null) {
+            leitor.erro("categoria", "só a rubrica de gasto tem categoria");
         }
-        if (!erros.isEmpty()) {
-            throw new DadosDaFolhaInvalidosException(erros);
-        }
+        leitor.conferir(DadosDaFolhaInvalidosException::new);
         return RubricaCatalogoResponse.de(catalogo.reclassificar(codigo, natureza, categoria));
     }
 
@@ -352,27 +345,6 @@ class FolhaController {
     RegraResponse incluirRegra(@Valid @RequestBody RegraRequest corpo) {
         return RegraResponse.de(contrapartidas.incluir(new RegraContrapartida(
                 Competencia.de(corpo.aPartirDe()), Taxa.dePontos(corpo.percentualDaBasica()))));
-    }
-
-    private static NaturezaRubrica natureza(Object valor, Map<String, Object> erros) {
-        var validas = Arrays.stream(NaturezaRubrica.values()).map(Enum::name).toList();
-        if (valor != null && validas.contains(valor.toString())) {
-            return NaturezaRubrica.valueOf(valor.toString());
-        }
-        erros.put("natureza", "deve ser um de " + validas);
-        return null;
-    }
-
-    private static CategoriaId categoria(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            return new CategoriaId(UUID.fromString(valor.toString()));
-        } catch (IllegalArgumentException e) {
-            erros.put("categoria", "deve ser um ID válido");
-            return null;
-        }
     }
 
     private static Dinheiro dinheiro(BigDecimal valor) {

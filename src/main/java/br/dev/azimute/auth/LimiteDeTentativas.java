@@ -1,6 +1,7 @@
 package br.dev.azimute.auth;
 
 import br.dev.azimute.comum.ErroDeNegocio;
+import br.dev.azimute.comum.Fuso;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -8,7 +9,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.Map;
 
 /**
@@ -26,7 +26,6 @@ class LimiteDeTentativas {
     static final int FALHAS_GLOBAIS = 20;
     static final Duration JANELA_GLOBAL = Duration.ofHours(1);
 
-    private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
     private static final Logger log = LoggerFactory.getLogger(LimiteDeTentativas.class);
 
     private final TentativaRepository tentativas;
@@ -60,7 +59,7 @@ class LimiteDeTentativas {
     static final class LoginBloqueadoException extends ErroDeNegocio {
         LoginBloqueadoException(Instant liberaEm) {
             super("LOGIN_BLOQUEADO", "Muitas tentativas deste endereço. Tente de novo mais tarde.", Tipo.BLOQUEADO,
-                    Map.of("liberaEm", liberaEm.atZone(FUSO).toOffsetDateTime().toString()));
+                    Map.of("liberaEm", Fuso.naApi(liberaEm).toString()));
         }
     }
 
