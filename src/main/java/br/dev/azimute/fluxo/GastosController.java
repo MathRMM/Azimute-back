@@ -1,9 +1,12 @@
 package br.dev.azimute.fluxo;
 
+import br.dev.azimute.plataforma.web.ValorMonetario;
 import br.dev.azimute.comum.CamposEditaveis;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.comum.LeitorDeCampos;
 import br.dev.azimute.contas.ContaId;
+import br.dev.azimute.fluxo.tabelas.FormaDeGasto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -25,8 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +43,7 @@ class GastosController {
     record RegistrarGastoRequest(
             @NotNull LocalDate data,
             @NotBlank String descricao,
-            @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal valor,
+            @NotNull @ValorMonetario.Positivo BigDecimal valor,
             @NotNull UUID categoria,
             @NotNull UUID conta) {
 
@@ -53,7 +54,7 @@ class GastosController {
 
     /** Com o nome da categoria e a forma de pagamento (RF13). {@code conta} só no à vista; {@code holerite}, em folha. */
     record GastoResponse(UUID id, LocalDate data, String descricao, Dinheiro valor, UUID categoria,
-                         String categoriaNome, String forma, UUID conta, UUID holerite) {
+                         String categoriaNome, FormaDeGasto forma, UUID conta, UUID holerite) {
 
         static GastoResponse de(GastoComCategoria item) {
             var g = item.gasto();
@@ -114,73 +115,15 @@ class GastosController {
         }
     }
 
+    /** O valor segue as regras do PUT: positivo e no máximo 2 casas, sem arredondar (RN03). */
     private static AlteracaoGasto lerAlteracao(Map<String, Object> corpo) {
-        var erros = new LinkedHashMap<String, Object>();
-        var data = data(corpo.get("data"), erros);
-        var descricao = descricao(corpo.get("descricao"), erros);
-        var valor = valor(corpo.get("valor"), erros);
-        var categoria = uuid(corpo, "categoria", erros);
-        var conta = uuid(corpo, "conta", erros);
-        if (!erros.isEmpty()) {
-            throw new DadosInvalidosException(erros);
-        }
-        return new AlteracaoGasto(data, descricao, valor, categoria == null ? null : new CategoriaId(categoria),
-                conta == null ? null : new ContaId(conta));
-    }
-
-    private static LocalDate data(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(valor.toString());
-        } catch (DateTimeParseException e) {
-            erros.put("data", "deve estar no formato AAAA-MM-DD");
-            return null;
-        }
-    }
-
-    private static String descricao(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        if (valor instanceof String texto && !texto.isBlank()) {
-            return texto;
-        }
-        erros.put("descricao", "deve ser texto não vazio");
-        return null;
-    }
-
-    /** Mesmas regras do PUT: positivo e no máximo 2 casas, sem arredondar (RN03). */
-    private static Dinheiro valor(Object valor, Map<String, Object> erros) {
-        if (valor == null) {
-            return null;
-        }
-        try {
-            var decimal = new BigDecimal(valor.toString().strip());
-            if (decimal.signum() > 0 && decimal.stripTrailingZeros().scale() <= 2) {
-                return new Dinheiro(decimal);
-            }
-        } catch (NumberFormatException e) {
-            // segue para o erro de campo abaixo
-        }
-        erros.put("valor", "deve ser um valor positivo com até 2 casas decimais");
-        return null;
-    }
-
-    private static UUID uuid(Map<String, Object> corpo, String campo, Map<String, Object> erros) {
-        var valor = corpo.get(campo);
-        if (valor == null) {
-            return null;
-        }
-        if (valor instanceof String texto) {
-            try {
-                return UUID.fromString(texto);
-            } catch (IllegalArgumentException e) {
-                // segue para o erro de campo abaixo
-            }
-        }
-        erros.put(campo, "deve ser um ID válido");
-        return null;
+        var leitor = new LeitorDeCampos(corpo);
+        var data = leitor.data("data");
+        var descricao = leitor.textoNaoVazio("descricao");
+        var valor = leitor.dinheiroPositivo("valor");
+        var categoria = leitor.id("categoria", CategoriaId::new);
+        var conta = leitor.id("conta", ContaId::new);
+        leitor.conferir(DadosInvalidosException::new);
+        return new AlteracaoGasto(data, descricao, valor, categoria, conta);
     }
 }

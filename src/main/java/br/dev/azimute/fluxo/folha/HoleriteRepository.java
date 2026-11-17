@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +44,7 @@ class HoleriteRepository {
                                 contrapartida_previdencia, data_adiantamento, data_liquido)
                             VALUES (:id, :competencia, :origem, :hash, :vencimentos, :descontos, :liquido, :salarioBase,
                                 :baseInss, :baseFgts, :fgtsMes, :baseIrrf, :contrapartida, :adiantamento, :dataLiquido)""")
-                    .param("id", h.id().valor()).param("competencia", h.competencia().mes().atDay(1))
+                    .param("id", h.id().valor()).param("competencia", h.competencia().primeiroDia())
                     .param("origem", h.origem().name()).param("hash", h.hash())
                     .param("vencimentos", h.totalVencimentos().valor()).param("descontos", h.totalDescontos().valor())
                     .param("liquido", h.liquido().valor())
@@ -85,7 +84,7 @@ class HoleriteRepository {
 
     boolean existeVivo(Competencia competencia) {
         return jdbc.sql("SELECT count(*) FROM fluxo.holerites WHERE competencia = :c AND deleted_at IS NULL")
-                .param("c", competencia.mes().atDay(1)).query(Long.class).single() > 0;
+                .param("c", competencia.primeiroDia()).query(Long.class).single() > 0;
     }
 
     List<RubricaLida> rubricas(HoleriteId id) {
@@ -157,7 +156,7 @@ class HoleriteRepository {
                 dinheiro(rs.getBigDecimal("base_fgts")), dinheiro(rs.getBigDecimal("fgts_mes")),
                 dinheiro(rs.getBigDecimal("base_irrf")));
         var holerite = new Holerite(new HoleriteId(rs.getObject("id", UUID.class)),
-                new Competencia(YearMonth.from(rs.getObject("competencia", LocalDate.class))),
+                Competencia.doDia(rs.getObject("competencia", LocalDate.class)),
                 Holerite.Origem.valueOf(rs.getString("origem")), rs.getString("hash"),
                 new Dinheiro(rs.getBigDecimal("total_vencimentos")), new Dinheiro(rs.getBigDecimal("total_descontos")),
                 new Dinheiro(rs.getBigDecimal("liquido")), bases,

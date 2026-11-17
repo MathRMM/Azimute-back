@@ -4,6 +4,7 @@ import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
+import br.dev.azimute.fluxo.tabelas.FormaDeGasto;
 import br.dev.azimute.fluxo.tabelas.TabelaDeGastos;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -41,7 +42,7 @@ class GastoRepository {
     /** Grava com o ID do cliente. {@code false} quando o ID já existe, vivo ou excluído; quem decide é o serviço. */
     boolean inserirSeAusente(Gasto gasto) {
         var forma = gasto.forma();
-        return tabela.inserirSeAusente(new TabelaDeGastos.Linha(gasto.id().valor(), gasto.data(), gasto.descricao(),
+        return tabela.inserirSeAusente(new TabelaDeGastos.Linha(gasto.id(), gasto.data(), gasto.descricao(),
                 gasto.valor(), gasto.categoria(),
                 forma instanceof FormaPagamento.AVista a ? a.conta() : null,
                 forma instanceof FormaPagamento.DescontoEmFolha d ? d.holerite() : null));
@@ -68,7 +69,7 @@ class GastoRepository {
     }
 
     void excluir(GastoId id) {
-        tabela.excluir(id.valor());
+        tabela.excluir(id);
     }
 
     void restaurar(GastoId id) {
@@ -78,7 +79,7 @@ class GastoRepository {
 
     /** Gastos vivos da competência pela {@code data} (RN09), do mais recente ao mais antigo (RF13). */
     List<GastoComCategoria> listar(Competencia competencia, CategoriaId categoria) {
-        var inicio = competencia.mes().atDay(1);
+        var inicio = competencia.primeiroDia();
         return jdbc.sql("SELECT " + COLUNAS + """
                          WHERE g.deleted_at IS NULL AND g.data >= :inicio AND g.data < :fim
                           AND (CAST(:categoria AS UUID) IS NULL OR g.categoria_id = :categoria)
@@ -97,9 +98,11 @@ class GastoRepository {
     }
 
     private static Gasto mapear(ResultSet rs) throws SQLException {
-        FormaPagamento forma = "A_VISTA".equals(rs.getString("forma"))
-                ? new FormaPagamento.AVista(new ContaId(rs.getObject("conta_id", UUID.class)))
-                : new FormaPagamento.DescontoEmFolha(new HoleriteId(rs.getObject("holerite_id", UUID.class)));
+        FormaPagamento forma = switch (FormaDeGasto.valueOf(rs.getString("forma"))) {
+            case A_VISTA -> new FormaPagamento.AVista(new ContaId(rs.getObject("conta_id", UUID.class)));
+            case DESCONTO_EM_FOLHA ->
+                    new FormaPagamento.DescontoEmFolha(new HoleriteId(rs.getObject("holerite_id", UUID.class)));
+        };
         return new Gasto(new GastoId(rs.getObject("id", UUID.class)), rs.getObject("data", LocalDate.class),
                 rs.getString("descricao"), new Dinheiro(rs.getBigDecimal("valor")),
                 new CategoriaId(rs.getObject("categoria_id", UUID.class)), forma);

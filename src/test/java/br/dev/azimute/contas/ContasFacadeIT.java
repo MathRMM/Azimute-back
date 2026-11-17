@@ -52,6 +52,14 @@ class ContasFacadeIT {
     }
 
     @Test
+    void movimentacao_criada_pela_fachada_nasce_com_uuid_v7() {
+        fachada.registrarSaida(nubank, UUID.randomUUID(), Dinheiro.de("10"), DATA);
+
+        var id = jdbc.sql("SELECT id FROM contas.movimentacoes WHERE tipo = 'SAIDA'").query(UUID.class).single();
+        assertThat(id.version()).isEqualTo(7);
+    }
+
+    @Test
     void entrada_credita_e_pagamento_de_fatura_debita_ambos_idempotentes() {
         var ganho = UUID.randomUUID();
         var cartao = UUID.randomUUID();

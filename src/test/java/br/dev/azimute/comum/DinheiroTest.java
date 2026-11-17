@@ -5,6 +5,8 @@ import net.jqwik.api.Property;
 import net.jqwik.api.constraints.BigRange;
 import net.jqwik.api.constraints.Scale;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 
@@ -65,6 +67,23 @@ class DinheiroTest {
     @Test
     void texto_invalido_e_rejeitado() {
         assertThatThrownBy(() -> Dinheiro.de("doze reais")).isInstanceOf(NumberFormatException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10", "10.5", "10.50", "10.500", " 10.50 ", "-3.25", "0"})
+    void exato_aceita_ate_2_casas_significativas(String texto) {
+        assertThat(Dinheiro.exato(texto)).isEqualTo(Dinheiro.de(texto.strip()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10.505", "0.001", "abc", "", " ", "10,50", "1e"})
+    void exato_recusa_em_vez_de_arredondar(String texto) {
+        assertThatThrownBy(() -> Dinheiro.exato(texto)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void exato_recusa_nulo() {
+        assertThatThrownBy(() -> Dinheiro.exato(null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Property

@@ -1,6 +1,7 @@
 package br.dev.azimute.fluxo;
 
 import br.dev.azimute.comum.ErroDeNegocio;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 
 import java.util.Map;
 

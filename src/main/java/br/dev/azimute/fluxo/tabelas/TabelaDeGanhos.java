@@ -2,19 +2,19 @@ package br.dev.azimute.fluxo.tabelas;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
+import br.dev.azimute.fluxo.GanhoId;
 import br.dev.azimute.fluxo.folha.HoleriteId;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /** Escrita em {@code fluxo.ganhos}, usada pela API de ganhos e pelo holerite. */
 @Repository
 public class TabelaDeGanhos {
 
     /** Um ganho a gravar. O holerite só existe no ganho {@code SALARIO}. */
-    public record Linha(UUID id, Competencia competencia, String descricao, String tipo, Dinheiro bruto,
+    public record Linha(GanhoId id, Competencia competencia, String descricao, TipoGanho tipo, Dinheiro bruto,
                         Dinheiro liquido, HoleriteId holerite) {
 
         public Linha {
@@ -50,14 +50,14 @@ public class TabelaDeGanhos {
     }
 
     /** Exclusão lógica do ganho vivo, sem os recebimentos: cada chamador decide o que fazer com eles. */
-    public void excluir(UUID id) {
+    public void excluir(GanhoId id) {
         jdbc.sql("UPDATE fluxo.ganhos SET deleted_at = now(), updated_at = now() WHERE id = :id AND deleted_at IS NULL")
-                .param("id", id).update();
+                .param("id", id.valor()).update();
     }
 
     private static JdbcClient.StatementSpec parametros(JdbcClient.StatementSpec sql, Linha g) {
-        return sql.param("id", g.id()).param("competencia", g.competencia().mes().atDay(1))
-                .param("descricao", g.descricao()).param("tipo", g.tipo())
+        return sql.param("id", g.id().valor()).param("competencia", g.competencia().primeiroDia())
+                .param("descricao", g.descricao()).param("tipo", g.tipo().name())
                 .param("bruto", g.bruto().valor()).param("liquido", g.liquido().valor())
                 .param("holerite", g.holerite() == null ? null : g.holerite().valor());
     }

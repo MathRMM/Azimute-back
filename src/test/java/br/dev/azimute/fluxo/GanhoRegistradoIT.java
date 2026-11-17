@@ -4,6 +4,7 @@ import br.dev.azimute.TestcontainersConfig;
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.comum.Dinheiro;
 import br.dev.azimute.contas.ContaId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

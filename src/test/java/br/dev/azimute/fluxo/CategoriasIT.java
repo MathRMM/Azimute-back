@@ -102,10 +102,10 @@ class CategoriasIT {
         alterar(id, Map.of("predefinida", true)).andExpect(status().is(422))
                 .andExpect(jsonPath("$.erro").value("CAMPO_NAO_EDITAVEL"));
         alterar(id, Map.of("nome", " ", "ativa", "sim")).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.nome").exists())
-                .andExpect(jsonPath("$.detalhes.campos.ativa").exists());
+                .andExpect(jsonPath("$.detalhes.campos.nome").value("deve ser texto não vazio"))
+                .andExpect(jsonPath("$.detalhes.campos.ativa").value("deve ser true ou false"));
         alterar(id, Map.of("nome", 10)).andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.nome").exists());
+                .andExpect(jsonPath("$.detalhes.campos.nome").value("deve ser texto não vazio"));
         alterar(UUID.randomUUID(), Map.of("ativa", false)).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.erro").value("CATEGORIA_NAO_ENCONTRADA"));
     }

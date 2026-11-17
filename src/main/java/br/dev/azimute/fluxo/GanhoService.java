@@ -2,6 +2,9 @@ package br.dev.azimute.fluxo;
 
 import br.dev.azimute.comum.Competencia;
 import br.dev.azimute.contas.ContasFacade;
+import br.dev.azimute.fluxo.tabelas.PapelDeRecebimento;
+import br.dev.azimute.fluxo.tabelas.RecebimentoId;
+import br.dev.azimute.fluxo.tabelas.TipoGanho;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +37,7 @@ class GanhoService {
         exigirAvulso(novo.tipo());
         var ganho = new Ganho(id, novo.competencia(), novo.descricao().strip(), novo.tipo(), novo.bruto(),
                 novo.liquido(), null);
-        var recebimento = new Recebimento(id.valor(), id, novo.competencia(), Recebimento.Papel.AVULSO,
+        var recebimento = new Recebimento(new RecebimentoId(id.valor()), id, novo.competencia(), PapelDeRecebimento.AVULSO,
                 novo.liquido(), novo.recebidoEm(), novo.conta(), false);
         var atual = new GanhoComRecebimentos(ganho, List.of(recebimento));
 
@@ -42,7 +45,7 @@ class GanhoService {
         if (existente.isPresent()) {
             return reenvio(existente.get(), atual);
         }
-        contas.registrarEntrada(novo.conta(), recebimento.id(), novo.liquido(), novo.recebidoEm());
+        contas.registrarEntrada(novo.conta(), recebimento.id().valor(), novo.liquido(), novo.recebidoEm());
         if (!ganhos.inserirSeAusente(ganho)) {
             // Outro envio do mesmo ID gravou entre a busca e a inserção.
             return reenvio(ganhos.buscar(id).orElseThrow(), atual);
@@ -75,7 +78,7 @@ class GanhoService {
                 alteracao.conta() == null ? recebimento.conta() : alteracao.conta(), false);
 
         if (alteracao.mexeNaConta()) {
-            contas.alterarLancamento(novoRecebimento.id(), novoRecebimento.conta(), novoRecebimento.valor(),
+            contas.alterarLancamento(novoRecebimento.id().valor(), novoRecebimento.conta(), novoRecebimento.valor(),
                     novoRecebimento.data());
         }
         ganhos.alterar(alterado);
@@ -93,7 +96,7 @@ class GanhoService {
         exigirDaApi(registro.get().ganho());
         if (!registro.get().excluido()) {
             ganhos.excluir(id);
-            registro.get().recebimentos().forEach(r -> contas.excluirLancamento(r.id()));
+            registro.get().recebimentos().forEach(r -> contas.excluirLancamento(r.id().valor()));
         }
     }
 
@@ -104,7 +107,7 @@ class GanhoService {
         exigirDaApi(registro.ganho());
         if (registro.excluido()) {
             ganhos.restaurar(id);
-            registro.recebimentos().forEach(r -> contas.restaurarLancamento(r.id()));
+            registro.recebimentos().forEach(r -> contas.restaurarLancamento(r.id().valor()));
         }
         return new GanhoComRecebimentos(registro.ganho(), registro.recebimentos());
     }

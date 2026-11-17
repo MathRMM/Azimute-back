@@ -13,7 +13,7 @@ import java.util.UUID;
 record ExtratoResponse(UUID conta, LocalDate de, LocalDate ate, Dinheiro saldoInicial, Dinheiro saldoFinal,
                        List<Linha> linhas, List<Marco> conciliacoes) {
 
-    record Linha(UUID id, String tipo, LocalDate data, Dinheiro valor, Movimentacao.Sentido sentido,
+    record Linha(UUID id, TipoMovimentacao tipo, LocalDate data, Dinheiro valor, Movimentacao.Sentido sentido,
                  UUID contraparte, String motivo) {}
 
     record Marco(LocalDate data, Dinheiro saldoReal, Dinheiro saldoCalculado, Dinheiro divergencia,

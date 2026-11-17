@@ -1,5 +1,6 @@
 package br.dev.azimute.contas;
 
+import br.dev.azimute.plataforma.web.ValorMonetario;
 import br.dev.azimute.comum.Dinheiro;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Digits;
@@ -28,7 +29,7 @@ class ConciliacoesController {
 
     /** O saldo real pode ser negativo; até 2 casas, sem arredondar. */
     record ConciliarRequest(@NotNull LocalDate data,
-                            @NotNull @Digits(integer = 17, fraction = 2) BigDecimal saldoReal,
+                            @NotNull @ValorMonetario BigDecimal saldoReal,
                             String justificativa) {}
 
     record ConciliacaoResponse(UUID id, LocalDate data, Dinheiro saldoReal, Dinheiro saldoCalculado,

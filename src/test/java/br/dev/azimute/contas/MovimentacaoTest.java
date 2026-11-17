@@ -79,13 +79,13 @@ class MovimentacaoTest {
 
     @Test
     void tipo_de_cada_movimentacao_corresponde_ao_valor_gravado_no_banco() {
-        assertThat(new Movimentacao.Entrada(novoId(), NUBANK, null, CEM, HOJE).tipo()).isEqualTo("ENTRADA");
-        assertThat(new Movimentacao.Saida(novoId(), NUBANK, null, CEM, HOJE).tipo()).isEqualTo("SAIDA");
+        assertThat(new Movimentacao.Entrada(novoId(), NUBANK, null, CEM, HOJE).tipo()).isEqualTo(TipoMovimentacao.ENTRADA);
+        assertThat(new Movimentacao.Saida(novoId(), NUBANK, null, CEM, HOJE).tipo()).isEqualTo(TipoMovimentacao.SAIDA);
         assertThat(new Movimentacao.Transferencia(novoId(), NUBANK, CDB, CEM, HOJE, null).tipo())
-                .isEqualTo("TRANSFERENCIA");
+                .isEqualTo(TipoMovimentacao.TRANSFERENCIA);
         assertThat(new Movimentacao.PagamentoFatura(novoId(), NUBANK, null, Competencia.de("2026-11"), CEM, HOJE)
-                .tipo()).isEqualTo("PAGAMENTO_FATURA");
-        assertThat(new Movimentacao.Rendimento(novoId(), CDB, CEM, HOJE).tipo()).isEqualTo("RENDIMENTO");
+                .tipo()).isEqualTo(TipoMovimentacao.PAGAMENTO_FATURA);
+        assertThat(new Movimentacao.Rendimento(novoId(), CDB, CEM, HOJE).tipo()).isEqualTo(TipoMovimentacao.RENDIMENTO);
     }
 
     @Test

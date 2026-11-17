@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,7 +63,7 @@ class MovimentacaoRepository {
                                                           ganho_id, gasto_id, cartao_id, fatura_comp, motivo)
                         VALUES (:id, :tipo, :origem, :destino, :valor, :data, :ganho, :gasto, :cartao, :fatura, :motivo)
                         ON CONFLICT DO NOTHING""")
-                .param("id", m.id().valor()).param("tipo", m.tipo())
+                .param("id", m.id().valor()).param("tipo", m.tipo().name())
                 .param("origem", campos.origem()).param("destino", campos.destino())
                 .param("valor", m.valor().valor()).param("data", m.data())
                 .param("ganho", campos.ganho()).param("gasto", campos.gasto()).param("cartao", campos.cartao())
@@ -145,16 +144,15 @@ class MovimentacaoRepository {
         var destino = contaOuNulo(rs, "conta_destino");
         var valor = new Dinheiro(rs.getBigDecimal("valor"));
         var data = rs.getObject("data", LocalDate.class);
-        return switch (rs.getString("tipo")) {
-            case "ENTRADA" -> new Movimentacao.Entrada(id, destino, rs.getObject("ganho_id", UUID.class), valor, data);
-            case "SAIDA" -> new Movimentacao.Saida(id, origem, rs.getObject("gasto_id", UUID.class), valor, data);
-            case "TRANSFERENCIA" -> new Movimentacao.Transferencia(id, origem, destino, valor, data,
+        return switch (TipoMovimentacao.valueOf(rs.getString("tipo"))) {
+            case ENTRADA -> new Movimentacao.Entrada(id, destino, rs.getObject("ganho_id", UUID.class), valor, data);
+            case SAIDA -> new Movimentacao.Saida(id, origem, rs.getObject("gasto_id", UUID.class), valor, data);
+            case TRANSFERENCIA -> new Movimentacao.Transferencia(id, origem, destino, valor, data,
                     rs.getString("motivo"));
-            case "PAGAMENTO_FATURA" -> new Movimentacao.PagamentoFatura(id, origem,
+            case PAGAMENTO_FATURA -> new Movimentacao.PagamentoFatura(id, origem,
                     rs.getObject("cartao_id", UUID.class),
-                    new Competencia(YearMonth.from(rs.getObject("fatura_comp", LocalDate.class))), valor, data);
-            case "RENDIMENTO" -> new Movimentacao.Rendimento(id, destino, valor, data);
-            default -> throw new IllegalStateException("Tipo de movimentação desconhecido: " + rs.getString("tipo"));
+                    Competencia.doDia(rs.getObject("fatura_comp", LocalDate.class)), valor, data);
+            case RENDIMENTO -> new Movimentacao.Rendimento(id, destino, valor, data);
         };
     }
 
@@ -173,7 +171,7 @@ class MovimentacaoRepository {
                 case Movimentacao.Transferencia t -> new Campos(t.origem().valor(), t.destino().valor(), null, null,
                         null, null, t.motivo());
                 case Movimentacao.PagamentoFatura p -> new Campos(p.origem().valor(), null, null, null, p.cartaoId(),
-                        p.fatura().mes().atDay(1), null);
+                        p.fatura().primeiroDia(), null);
                 case Movimentacao.Rendimento r -> new Campos(null, r.destino().valor(), null, null, null, null, null);
             };
         }

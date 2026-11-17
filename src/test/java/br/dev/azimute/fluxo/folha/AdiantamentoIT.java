@@ -107,8 +107,8 @@ class AdiantamentoIT {
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.erro").value("ADIANTAMENTO_JA_LANCADO"));
         api.adiantamento(UUID.randomUUID(), Map.of("competencia", "2026-13", "valor", "0"))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.detalhes.campos.competencia").exists())
-                .andExpect(jsonPath("$.detalhes.campos.valor").exists());
+                .andExpect(jsonPath("$.detalhes.campos.competencia").value("deve estar no formato AAAA-MM"))
+                .andExpect(jsonPath("$.detalhes.campos.valor").value("deve ser maior que zero"));
 
         api.importar(ApiDaFolha.holerite("2026-11")).andExpect(status().isCreated());
         api.adiantamento(UUID.randomUUID(), Map.of("competencia", "2026-11", "valor", "2500"))
